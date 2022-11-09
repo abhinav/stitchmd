@@ -1,0 +1,18 @@
+USAGE: mdreduce [OPTIONS] FILE
+
+Reads a hierarchy of sections from FILE and generates a Markdown file
+with the contents of all linked files combined.
+Reads from stdin if FILE is '-'.
+
+OPTIONS
+
+  -o FILE
+	write output to FILE instead of stdout.
+  -C DIR
+	change to DIR before reading files.
+	Defaults to the directory of FILE, or the current directory if reading
+	from stdin.
+  -version
+	print version information.
+  -h, -help
+	print this message.
