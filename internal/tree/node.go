@@ -20,7 +20,10 @@ func Transform[T, U any](t *Node[T], f func(T) U) *Node[U] {
 }
 
 func (n *Node[T]) String() string {
-	return fmt.Sprintf("{%v, %v}", n.Value, n.List)
+	if len(n.List) == 0 {
+		return fmt.Sprintf("{%v}", n.Value)
+	}
+	return fmt.Sprintf("{%v %v}", n.Value, n.List)
 }
 
 // Walk calls the given function on every node and its descendants
@@ -40,15 +43,15 @@ type List[T any] []*Node[T]
 // by transforming the given node list and all its descendants
 // using the given function.
 func TransformList[T, U any](t List[T], f func(T) U) List[U] {
+	if t == nil {
+		// Match nilness of the input.
+		return nil
+	}
 	ns := make(List[U], len(t))
 	for i, n := range t {
 		ns[i] = Transform(n, f)
 	}
 	return ns
-}
-
-func (ns List[T]) String() string {
-	return fmt.Sprintf("[%v]", []*Node[T](ns))
 }
 
 // Walk calls the given function on every node and its descendants
