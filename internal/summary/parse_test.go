@@ -1,4 +1,4 @@
-package main
+package summary
 
 import (
 	"strings"
@@ -8,24 +8,27 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/yuin/goldmark"
 	"go.abhg.dev/mdreduce/internal/goldast"
+	"go.abhg.dev/mdreduce/internal/tree"
 )
 
-func TestParseTOC(t *testing.T) {
+func TestParseSummary(t *testing.T) {
 	t.Parallel()
 
-	item := func(depth int, title, file string, children ...*Item) *Item {
-		return &Item{
-			Title: title,
-			File:  file,
-			Depth: depth,
-			Items: children,
+	item := func(depth int, text, file string, children ...*tree.Node[*Item]) *tree.Node[*Item] {
+		return &tree.Node[*Item]{
+			Value: &Item{
+				Text:  text,
+				File:  file,
+				Depth: depth,
+			},
+			List: tree.List[*Item](children),
 		}
 	}
 
-	section := func(title string, items ...*Item) *Section {
+	section := func(title string, items ...*tree.Node[*Item]) *Section {
 		return &Section{
 			Title: title,
-			Items: items,
+			Items: tree.List[*Item](items),
 		}
 	}
 
@@ -104,27 +107,22 @@ func TestParseTOC(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
-			src := []byte(tt.give)
-			doc, err := goldast.Parse(goldmark.DefaultParser(), src)
+			f, err := goldast.Parse(goldmark.DefaultParser(), "", []byte(tt.give))
 			require.NoError(t, err)
 
-			got, err := parseTOC("", src, doc)
+			got, err := Parse(f)
 			require.NoError(t, err)
 
-			if assert.Equal(t, src, got.Source) {
-				got.Source = nil
-			}
-			if assert.NotNil(t, got.Positioner) {
-				got.Positioner = nil
-			}
-
+			// Zero-out the AST and position to make the test cases
+			// easier to write.
 			for _, s := range got.Sections {
 				if assert.NotNil(t, s.AST) {
 					s.AST = nil
 				}
 
-				s.visitAllItems(func(i *Item) {
+				s.Items.Walk(func(i *Item) error {
 					i.Pos = 0
+					return nil
 				})
 			}
 
@@ -133,7 +131,7 @@ func TestParseTOC(t *testing.T) {
 	}
 }
 
-func TestParseTOCErrors(t *testing.T) {
+func TestParseSummaryErrors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -213,16 +211,15 @@ func TestParseTOCErrors(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
-			src := []byte(tt.give)
-			doc, err := goldast.Parse(goldmark.DefaultParser(), src)
+			f, err := goldast.Parse(goldmark.DefaultParser(), tt.filename, []byte(tt.give))
 			require.NoError(t, err)
 			defer func() {
 				if t.Failed() {
-					doc.Dump(src, 0)
+					f.AST.Dump(f.Source, 0)
 				}
 			}()
 
-			_, err = parseTOC(tt.filename, src, doc)
+			_, err = Parse(f)
 			require.Error(t, err)
 
 			var gotErrors []error

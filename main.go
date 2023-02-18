@@ -22,6 +22,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/mdreduce/internal/goldast"
 	"go.abhg.dev/mdreduce/internal/pos"
+	"go.abhg.dev/mdreduce/internal/summary"
 )
 
 var _version string = "dev"
@@ -116,12 +117,12 @@ func (cmd *mainCmd) run(opts *params) error {
 		goldmark.WithExtensions(extension.GFM),
 	).Parser()
 
-	doc, err := goldast.Parse(mdParser, src)
+	f, err := goldast.Parse(mdParser, filename, src)
 	if err != nil {
 		return err
 	}
 
-	toc, err := parseTOC(filename, src, doc)
+	toc, err := summary.Parse(f)
 	if err != nil {
 		cmd.log.Println(err)
 		return errors.New("error extracting TOC")
@@ -133,15 +134,16 @@ func (cmd *mainCmd) run(opts *params) error {
 		IDGen:  newIDGenerator(),
 	}
 	var files []*markdownFile
-	errs := pos.NewErrorList(toc.Positioner)
+	errs := pos.NewErrorList(f.Positioner)
 	for _, sec := range toc.Sections {
-		sec.visitAllItems(func(item *Item) {
+		sec.Items.Walk(func(item *summary.Item) error {
 			f, err := rdr.ReadFile(item.File)
 			if err != nil {
 				errs.Pushf(item.Pos, "%v", err)
-				return
+				return nil
 			}
 			files = append(files, f)
+			return nil
 		})
 	}
 	if err := errs.Err(); err != nil {
@@ -166,7 +168,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		Log:         cmd.log,
 	}
 
-	if err := g.Render(toc); err != nil {
+	if err := g.Render(f, toc); err != nil {
 		cmd.log.Println(err)
 		return errors.New("error rendering TOC")
 	}
@@ -181,23 +183,24 @@ type generator struct {
 	FilesByPath map[string]*markdownFile
 }
 
-func (g *generator) Render(toc *TOC) error {
-	errs := pos.NewErrorList(toc.Positioner)
+func (g *generator) Render(f *goldast.File, toc *summary.TOC) error {
+	errs := pos.NewErrorList(f.Positioner)
 	for _, sec := range toc.Sections {
 		// TODO: opt-out flag to not render the TOC
 		for _, n := range sec.AST {
 			// TODO: need to process the links in the TOC as well.
-			if err := g.Renderer.Render(g.W, toc.Source, n.Node); err != nil {
+			if err := g.Renderer.Render(g.W, f.Source, n.Node); err != nil {
 				return err
 			}
 			io.WriteString(g.W, "\n")
 		}
 
-		sec.visitAllItems(func(item *Item) {
+		sec.Items.Walk(func(i *summary.Item) error {
 			io.WriteString(g.W, "\n")
-			if err := g.RenderItem(item); err != nil {
-				errs.Pushf(item.Pos, "render: %w", err)
+			if err := g.RenderItem(i); err != nil {
+				errs.Pushf(i.Pos, "render: %w", err)
 			}
+			return nil
 			// TODO: Prevent auto-heading ID from being rendered
 		})
 	}
@@ -205,7 +208,7 @@ func (g *generator) Render(toc *TOC) error {
 	return errs.Err()
 }
 
-func (g *generator) RenderItem(item *Item) error {
+func (g *generator) RenderItem(item *summary.Item) error {
 	f := g.FilesByPath[item.File]
 	if f == nil {
 		// TODO: this shouldn't need a map lookup.
@@ -243,18 +246,14 @@ func (g *generator) RenderItem(item *Item) error {
 }
 
 type markdownFile struct {
+	*goldast.File
+
 	// Path to the file relative to the FS root.
 	Path string
 
 	// Directory containing the file.
 	// This is the same as filepath.Dir(Path).
 	Dir string
-
-	// Contents of the file.
-	Source []byte
-
-	// Parsed Markdown contents of th efile.
-	AST *goldast.Node[ast.Node]
 
 	// Level 1 heading acting as the title for the document.
 	// This is non-nil only if the document has exactly one such heading.
@@ -264,10 +263,6 @@ type markdownFile struct {
 	LocalLinks  []*localReference[*ast.Link]
 	LocalImages []*localReference[*ast.Image]
 	Headings    []*markdownHeading
-
-	// Positioner to convert Pos values in the AST
-	// into file positions.
-	Positioner pos.Positioner
 }
 
 type markdownHeading struct {
@@ -296,7 +291,7 @@ func (r *Reader) ReadFile(path string) (*markdownFile, error) {
 		return nil, err
 	}
 
-	doc, err := goldast.Parse(r.Parser, bs)
+	f, err := goldast.Parse(r.Parser, path, bs)
 	if err != nil {
 		return nil, fmt.Errorf("parse: %w", err)
 	}
@@ -310,7 +305,7 @@ func (r *Reader) ReadFile(path string) (*markdownFile, error) {
 		h1s []*markdownHeading
 	)
 
-	err = goldast.Walk(doc, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
+	err = goldast.Walk(f.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
 		}
@@ -362,9 +357,7 @@ func (r *Reader) ReadFile(path string) (*markdownFile, error) {
 	return &markdownFile{
 		Path:        path,
 		Dir:         filepath.Dir(path),
-		Source:      bs,
-		AST:         doc,
-		Positioner:  pos.FromContent(path, bs),
+		File:        f,
 		Title:       title,
 		LocalLinks:  links,
 		LocalImages: images,

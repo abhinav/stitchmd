@@ -1,72 +1,14 @@
-package main
+package summary
 
 import (
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/mdreduce/internal/goldast"
 	"go.abhg.dev/mdreduce/internal/pos"
+	"go.abhg.dev/mdreduce/internal/tree"
 )
 
-// TOC is a list of sections in a TOC file.
-type TOC struct {
-	Sections []*Section
-	Source   []byte
-
-	Positioner pos.Positioner
-}
-
-// Section is a section of a table of contents.
-// It's comprised of an optional title and a list of items.
-type Section struct {
-	// Title of the section, if any.
-	Title string
-
-	// Tree of items in the section.
-	Items []*Item
-
-	// AST nodes that make up this section.
-	AST []*goldast.Node[ast.Node]
-}
-
-// visitAllItems recursively calls the given function
-// for every item in this section and its descendants.
-func (s *Section) visitAllItems(f func(*Item)) {
-	for _, item := range s.Items {
-		item.visitAll(f)
-	}
-}
-
-// Item is a single iten in a table of contents.
-type Item struct {
-	// Title is the title of the page.
-	// This is the text inside the "[..]" section of the link.
-	Title string
-
-	// File is the path to the Markdown file.
-	// This is the text inside the "(..)" section of the link.
-	File string
-
-	// Depth is the depth of the item in the table of contents.
-	// Depth starts at zero for top-level items.
-	Depth int
-
-	// Items is a list of items nested under this item, if any.
-	Items []*Item
-
-	// Position at which this item was found.
-	Pos pos.Pos
-}
-
-func (i *Item) visitAll(f func(*Item)) {
-	f(i)
-	for _, item := range i.Items {
-		item.visitAll(f)
-	}
-}
-
-// parseTOC parses a table of contents from a Markdown List node
-// representing the table of contents.
-//
-// The table of contents is expected in a very specific format:
+// Parse parses a summary from a Markdown document.
+// The summary is expected in a very specific format:
 //
 //   - it's comprised of one or more sections
 //   - each section has an optional title header and a list of items
@@ -87,21 +29,17 @@ func (i *Item) visitAll(f func(*Item)) {
 //	- [Appendix A](appendix-a.md)
 //
 // Anything else will result in an error.
-func parseTOC(filename string, src []byte, doc *goldast.Node[ast.Node]) (*TOC, error) {
-	posc := pos.FromContent(filename, src)
-	errs := pos.NewErrorList(posc)
-	parser := newTOCParser(src, errs)
-	parser.parseSections(doc)
+func Parse(f *goldast.File) (*TOC, error) {
+	errs := pos.NewErrorList(f.Positioner)
+	parser := newTOCParser(f.Source, errs)
+	parser.parseSections(f.AST)
 	if len(parser.sections) == 0 && errs.Len() == 0 {
-		errs.Pushf(doc.Pos(), "no sections found")
+		errs.Pushf(f.Pos, "no sections found")
 		return nil, errs.Err()
 	}
 
-	// TODO: parseTOC should take a file
 	return &TOC{
-		Sections:   parser.sections,
-		Source:     src,
-		Positioner: posc,
+		Sections: parser.sections,
 	}, errs.Err()
 }
 
@@ -165,8 +103,8 @@ type sectionParser struct {
 	src  []byte
 	errs *pos.ErrorList
 
-	depth int     // current depth
-	items []*Item // items parsed so far
+	depth int // current depth
+	items tree.List[*Item]
 }
 
 func (p *sectionParser) child() *sectionParser {
@@ -177,7 +115,7 @@ func (p *sectionParser) child() *sectionParser {
 	}
 }
 
-func (p *sectionParser) parse(ls *goldast.Node[*ast.List]) []*Item {
+func (p *sectionParser) parse(ls *goldast.Node[*ast.List]) tree.List[*Item] {
 	for ch := ls.FirstChild(); ch != nil; ch = ch.NextSibling() {
 		li, ok := goldast.Cast[*ast.ListItem](ch)
 		if !ok {
@@ -233,11 +171,13 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 
 	dest := string(link.Node.Destination)
 	// TODO: validate dest
-	item := Item{
-		Title: string(link.Node.Text(p.src)),
-		File:  dest,
-		Depth: p.depth,
-		Pos:   link.Pos(),
+	node := tree.Node[*Item]{
+		Value: &Item{
+			Text:  string(link.Node.Text(p.src)),
+			File:  dest,
+			Depth: p.depth,
+			Pos:   link.Pos(),
+		},
 	}
 	if hasChildren {
 		ls, ok := goldast.Cast[*ast.List](li.LastChild())
@@ -246,8 +186,8 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 			return
 		}
 
-		item.Items = p.child().parse(ls)
+		node.List = p.child().parse(ls)
 	}
 
-	p.items = append(p.items, &item)
+	p.items = append(p.items, &node)
 }
