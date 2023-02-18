@@ -21,7 +21,7 @@ func TestSlugify(t *testing.T) {
 		tt := tt
 		t.Run(tt.give, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, slugify(tt.give))
+			assert.Equal(t, tt.want, titleSlug(tt.give))
 		})
 	}
 }

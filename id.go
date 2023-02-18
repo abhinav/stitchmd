@@ -18,7 +18,7 @@ func newIDGenerator() *idGenerator {
 // It reports whether a header with this title automatically gets this slug.
 // If it returns false, the caller should render an anchor for the slug.
 func (g *idGenerator) GenerateID(title string) (slug string, auto bool) {
-	slug = slugify(title)
+	slug = titleSlug(title)
 	for i := 0; ; i++ {
 		slug := slug
 		if i > 0 {
