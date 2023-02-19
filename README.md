@@ -1,19 +1,46 @@
 # mdreduce
 
-mdreduce reads a Markdown file defining a table of contents
-with links to other Markdown files,
-and reduces it all to a single Markdown file.
+mdreduce is a tool that generates
+large Markdown files from several smaller files.
+It lets you define your desired layout as a table of contents,
+and then it reads and combines all the files together.
+
+See [Usage](#usage) for a demonstration.
+
+## Features
+
+- **Cross-linking**:
+  mdreduce recognizes cross-links between input Markdown files
+  and automatically rewrites them to be local header links
+  in the generated output file.
+  This keeps your input files, as well as the output file
+  independently browsable.
+- **Header offsetting**:
+  mdreduce will adjust heading levels of included Markdown files
+  based on the hierarchy you specify in the summary file.
+
+## Installation
+
+Install mdreduce from source with the following command:
+
+```bash
+$ go install go.abhg.dev/mdreduce@latest
+```
+
+<!-- TODO: binary installation once goreleaser is set up. -->
 
 ## Usage
 
-To use mdreduce, run it with a Markdown file defining the table of contents
-for your combined Markdown file.
+To use mdreduce, run it with a Markdown file
+defining the layout of your combined file.
+This input file is referred to as the **summary file**,
+and is typically named "summary.md".
 
 ```bash
-mdreduce toc.md
+mdreduce summary.md
 ```
 
-The table of contents in the input file is a list of one or more sections,
+The table of contents in the summary file is a list of one or more **sections**,
 where each section defines an optional title,
 and a list of Markdown files specifying a hierarchy for that section.
 
@@ -36,15 +63,20 @@ For example:
 Some things to note about the input format:
 
 - Section headers are optional.
-  If present, they will be rendered as-is.
+  If present, they determine the heading levels for the included files.
 - Each link in the list must specify a Markdown file.
 - List items may be nested to indicate a hierarchy.
 
+<!-- TODO: document syntax explicitly in a separate section. -->
+
 The output of mdreduce will be a single Markdown file with the
-contents of all the listed files inlined.
+contents of all the listed files inline,
+with their links rewritten to match their new location.
 
 For example, the output of the above input file
 will be roughly in the following shape:
+
+<details>
 
 ```markdown
 # User Guide
@@ -83,6 +115,8 @@ will be roughly in the following shape:
 
 <!-- contents of faq.md -->
 ```
+
+</details>
 
 ### Page title
 
