@@ -5,7 +5,6 @@
 package summary
 
 import (
-	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/mdreduce/internal/goldast"
 	"go.abhg.dev/mdreduce/internal/pos"
 	"go.abhg.dev/mdreduce/internal/tree"
@@ -29,7 +28,7 @@ type Section struct {
 	Items tree.List[*Item]
 
 	// AST nodes that make up this section.
-	AST []*goldast.Node[ast.Node]
+	AST []*goldast.Any
 }
 
 // Item is a single item in a table of contents.

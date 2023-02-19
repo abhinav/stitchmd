@@ -6,7 +6,7 @@ import (
 )
 
 // Visitor visits individual nodes in a Goldmark AST.
-type Visitor func(n *Node[ast.Node], enter bool) (ast.WalkStatus, error)
+type Visitor func(n *Any, enter bool) (ast.WalkStatus, error)
 
 // Walk is a variant of [ast.Walk] with support for position tracking.
 func Walk[T ast.Node](node *Node[T], fn Visitor) error {
@@ -35,5 +35,5 @@ func (w *walker) Visit(n ast.Node, enter bool) (ast.WalkStatus, error) {
 		}()
 	}
 
-	return w.visit(&Node[ast.Node]{Node: n, pos: pos}, enter)
+	return w.visit(&Any{Node: n, pos: pos}, enter)
 }

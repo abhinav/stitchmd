@@ -37,11 +37,23 @@ type Node[T ast.Node] struct {
 	// current tracking information.
 	pos pos.Pos
 
-	parent *Node[ast.Node]
-
-	// TODO: Maybe also track source internally.
-	// TODO: make Pos private and expose a Pos method?
+	parent *Any
 }
+
+type (
+	// Any holds any Goldmark AST node.
+	Any = Node[ast.Node]
+
+	// Heading is a Goldmark heading node
+	// for both '#' and '---' style headers.
+	Heading = Node[*ast.Heading]
+
+	// List is a Goldmark list for both ordered and unordered lists.
+	List = Node[*ast.List]
+
+	// ListItem is a single item in a [List].
+	ListItem = Node[*ast.ListItem]
+)
 
 // Wrap wraps a Goldmark AST node to track position information
 // during a traversal.
@@ -80,11 +92,11 @@ func MustCast[Dst, Src ast.Node](n *Node[Src]) *Node[Dst] {
 	return v
 }
 
-func (n *Node[T]) generalize() *Node[ast.Node] {
+func (n *Node[T]) generalize() *Any {
 	if n == nil {
 		return nil
 	}
-	return &Node[ast.Node]{
+	return &Any{
 		Node:   n.Node,
 		pos:    n.pos,
 		parent: n.parent,
@@ -113,19 +125,19 @@ func (n *Node[T]) Kind() ast.NodeKind {
 
 // NextSibling returns the next sibling of this node,
 // or nil if this is the last node in this chain.
-func (n *Node[T]) NextSibling() *Node[ast.Node] {
+func (n *Node[T]) NextSibling() *Any {
 	return n.relation((ast.Node).NextSibling, n.parent.Pos(), n.parent)
 }
 
 // PreviousSibling returns the previous sibling of this node,
 // or nil if this is the first node in this chain.
-func (n *Node[T]) PreviousSibling() *Node[ast.Node] {
+func (n *Node[T]) PreviousSibling() *Any {
 	return n.relation((ast.Node).PreviousSibling, n.parent.Pos(), n.parent)
 }
 
 // Parent returns the parent of this node,
 // or nil if this is the root node.
-func (n *Node[T]) Parent() *Node[ast.Node] {
+func (n *Node[T]) Parent() *Any {
 	return n.parent
 }
 
@@ -139,21 +151,21 @@ func (n *Node[T]) ChildCount() int {
 
 // FirstChild returns the first child of this node,
 // or nil if this has no children.
-func (n *Node[T]) FirstChild() *Node[ast.Node] {
+func (n *Node[T]) FirstChild() *Any {
 	return n.relation((ast.Node).FirstChild, n.pos, n.generalize())
 }
 
 // LastChild returns the last child of this node,
 // or nil if this has no children.
-func (n *Node[T]) LastChild() *Node[ast.Node] {
+func (n *Node[T]) LastChild() *Any {
 	return n.relation((ast.Node).LastChild, n.pos, n.generalize())
 }
 
 func (n *Node[T]) relation(
 	relf func(ast.Node) ast.Node,
 	fallback pos.Pos,
-	parent *Node[ast.Node],
-) *Node[ast.Node] {
+	parent *Any,
+) *Any {
 	if n == nil {
 		return nil
 	}
@@ -168,7 +180,7 @@ func (n *Node[T]) relation(
 		p = fallback
 	}
 
-	return &Node[ast.Node]{
+	return &Any{
 		Node:   rel,
 		pos:    p,
 		parent: parent,

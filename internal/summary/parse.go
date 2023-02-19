@@ -58,7 +58,7 @@ func newTOCParser(src []byte, errs *pos.ErrorList) *tocParser {
 	}
 }
 
-func (p *tocParser) parseSections(n *goldast.Node[ast.Node]) {
+func (p *tocParser) parseSections(n *goldast.Any) {
 	for n := n.FirstChild(); n != nil; {
 		sec, next := p.parseSection(n)
 		if sec != nil {
@@ -68,8 +68,8 @@ func (p *tocParser) parseSections(n *goldast.Node[ast.Node]) {
 	}
 }
 
-func (p *tocParser) parseSection(n *goldast.Node[ast.Node]) (*Section, *goldast.Node[ast.Node]) {
-	var astNodes []*goldast.Node[ast.Node]
+func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
+	var astNodes []*goldast.Any
 
 	var title string
 	if h, ok := goldast.Cast[*ast.Heading](n); ok {
@@ -117,7 +117,7 @@ func (p *sectionParser) child() *sectionParser {
 	}
 }
 
-func (p *sectionParser) parse(ls *goldast.Node[*ast.List]) tree.List[*Item] {
+func (p *sectionParser) parse(ls *goldast.List) tree.List[*Item] {
 	for ch := ls.FirstChild(); ch != nil; ch = ch.NextSibling() {
 		li, ok := goldast.Cast[*ast.ListItem](ch)
 		if !ok {
@@ -131,7 +131,7 @@ func (p *sectionParser) parse(ls *goldast.Node[*ast.List]) tree.List[*Item] {
 	return p.items
 }
 
-func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
+func (p *sectionParser) parseItem(li *goldast.ListItem) {
 	var hasChildren bool
 	switch count := li.ChildCount(); count {
 	case 0:
@@ -146,7 +146,7 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 		return
 	}
 
-	var n *goldast.Node[ast.Node]
+	var n *goldast.Any
 	switch ch := li.FirstChild(); ch.Kind() {
 	case ast.KindTextBlock, ast.KindParagraph:
 		switch count := ch.ChildCount(); count {

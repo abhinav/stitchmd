@@ -38,7 +38,7 @@ func (t *transformer) transformSection(section *markdownSection) {
 	for _, n := range section.AST {
 		// TODO: turn non-Link nodes into Links to their respective
 		// sections.
-		goldast.Walk(n, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
+		goldast.Walk(n, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 			if !enter {
 				return ast.WalkContinue, nil
 			}
@@ -60,7 +60,7 @@ func (t *transformer) transformTitle(title *markdownTitle) {
 
 func (t *transformer) transformFile(file *markdownFile) {
 	dir := filepath.Dir(file.Path)
-	goldast.Walk(file.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
+	goldast.Walk(file.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
 		}

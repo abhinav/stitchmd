@@ -1,7 +1,6 @@
 package goldast
 
 import (
-	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/mdreduce/internal/pos"
@@ -13,7 +12,7 @@ type File struct {
 	Name string
 
 	// AST is the parsed Markdown file.
-	AST *Node[ast.Node]
+	AST *Any
 
 	// Source is the original Markdown source.
 	Source []byte

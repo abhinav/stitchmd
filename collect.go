@@ -77,11 +77,11 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 	// TODO: title should be the first thing in the document
 
 	var (
-		h1s   []*goldast.Node[*ast.Heading]
+		h1s   []*goldast.Heading
 		h1IDs []string
 		// inv: len(h1s) == len(h1IDs)
 	)
-	err = goldast.Walk(f.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
+	err = goldast.Walk(f.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
 		}
@@ -136,7 +136,7 @@ type markdownItem interface {
 
 type markdownSection struct {
 	// TODO: turn markdownSection AST into a single node
-	AST        []*goldast.Node[ast.Node]
+	AST        []*goldast.Any
 	Positioner pos.Positioner
 	Source     []byte
 }
