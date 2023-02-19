@@ -66,15 +66,10 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 		return nil, err
 	}
 
-	// TODO: -r/--recurse flag
-	// to extract summary from top of included files?
-
 	f, err := goldast.Parse(c.Parser, item.Target, src)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: title should be the first thing in the document
 
 	var (
 		h1s   []*goldast.Heading
@@ -95,10 +90,6 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 		// to ensure that ID collisions are handled correctly.
 		title := n.Node.Text(src)
 		id, _ := c.IDGen.GenerateID(string(title))
-
-		// if !ok {
-		// 	// TODO: do we need to handle this?
-		// }
 		if h.Node.Level == 1 {
 			h1s = append(h1s, h)
 			h1IDs = append(h1IDs, id)
@@ -132,10 +123,7 @@ type markdownItem interface {
 	markdownItem()
 }
 
-// TODO: Maybe this AST should be represented in terms of summary.Node somehow.
-
 type markdownSection struct {
-	// TODO: turn markdownSection AST into a single node
 	AST        []*goldast.Any
 	Positioner pos.Positioner
 	Source     []byte

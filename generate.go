@@ -39,9 +39,7 @@ func (g *generator) render(item markdownItem) error {
 }
 
 func (g *generator) renderSection(sec *markdownSection) error {
-	// TODO: opt-out flag to not render the TOC
 	for _, n := range sec.AST {
-		// TODO: need to process the links in the TOC as well.
 		if err := g.Renderer.Render(g.W, sec.Source, n.Node); err != nil {
 			return err
 		}

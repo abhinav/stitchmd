@@ -40,8 +40,6 @@ Some things to note about the input format:
 - Each link in the list must specify a Markdown file.
 - List items may be nested to indicate a hierarchy.
 
-<!-- TODO: Support external links in TOC to be reproduced as-is? -->
-
 The output of mdreduce will be a single Markdown file with the
 contents of all the listed files inlined.
 
@@ -94,9 +92,6 @@ The page title is determined by the following, in-order:
   that's the title for that page.
 - Otherwise, the link text specified in the table of contents
   is the title for that page.
-
-<!-- TODO: page front matter -->
-<!-- TODO: auto link text with <..> in TOC -->
 
 ## License
 

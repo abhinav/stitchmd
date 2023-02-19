@@ -36,14 +36,11 @@ func (t *transformer) transformItem(item markdownItem) {
 
 func (t *transformer) transformSection(section *markdownSection) {
 	for _, n := range section.AST {
-		// TODO: turn non-Link nodes into Links to their respective
-		// sections.
 		goldast.Walk(n, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 			if !enter {
 				return ast.WalkContinue, nil
 			}
 			if l, ok := goldast.Cast[*ast.Link](n); ok {
-				// TODO: put Positioner on markdownFile
 				if err := t.transformLink(".", l); err != nil {
 					t.Log.Printf("%v:%v",
 						section.Positioner.Position(l.Pos()), err)
@@ -65,7 +62,6 @@ func (t *transformer) transformFile(file *markdownFile) {
 			return ast.WalkContinue, nil
 		}
 		if l, ok := goldast.Cast[*ast.Link](n); ok {
-			// TODO: put Positioner on markdownFile
 			if err := t.transformLink(dir, l); err != nil {
 				t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
 			}
@@ -74,8 +70,6 @@ func (t *transformer) transformFile(file *markdownFile) {
 		} else {
 			return ast.WalkContinue, nil
 		}
-
-		// TODO: rewrite image links
 
 		return ast.WalkSkipChildren, nil
 	})
@@ -88,7 +82,6 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 	}
 
 	if u.Path == "" {
-		// TODO: rewrite relative header links
 		return nil
 	}
 
@@ -98,13 +91,9 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 		return fmt.Errorf("link to unknown file: %v", dst)
 	}
 
-	// TODO: handle no file title
 	if u.Fragment == "" && to.ID != "" {
 		link.Node.Destination = []byte("#" + to.ID)
 	}
 
-	// TODO: if u.Fragment was not empty,
-	// map it to a header in the original file,
-	// and check if it has a new header ID.
 	return nil
 }
