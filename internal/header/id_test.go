@@ -1,4 +1,4 @@
-package main
+package header
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 func TestIDGenerator(t *testing.T) {
 	t.Parallel()
 
-	g := newIDGenerator()
+	g := NewIDGen()
 
 	if slug, auto := g.GenerateID("Hello, world!"); assert.True(t, auto) {
 		assert.Equal(t, "hello-world", slug)

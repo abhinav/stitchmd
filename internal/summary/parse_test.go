@@ -14,12 +14,12 @@ import (
 func TestParseSummary(t *testing.T) {
 	t.Parallel()
 
-	item := func(depth int, text, file string, children ...*tree.Node[*Item]) *tree.Node[*Item] {
+	item := func(depth int, text, dest string, children ...*tree.Node[*Item]) *tree.Node[*Item] {
 		return &tree.Node[*Item]{
 			Value: &Item{
-				Text:  text,
-				File:  file,
-				Depth: depth,
+				Text:   text,
+				Target: dest,
+				Depth:  depth,
 			},
 			List: tree.List[*Item](children),
 		}
@@ -100,6 +100,22 @@ func TestParseSummary(t *testing.T) {
 					item(0, "baz", "baz.md")),
 			),
 		},
+		{
+			desc: "items withouth links",
+			give: unlines(
+				"- foo",
+				"- bar",
+				"    - [baz](baz.md)",
+				"- baz",
+			),
+			want: toc(
+				section("",
+					item(0, "foo", ""),
+					item(0, "bar", "",
+						item(1, "baz", "baz.md")),
+					item(0, "baz", "")),
+			),
+		},
 	}
 
 	for _, tt := range tests {
@@ -166,14 +182,14 @@ func TestParseSummaryErrors(t *testing.T) {
 			},
 		},
 		{
-			desc: "no link",
+			desc: "styled title",
 			give: unlines(
 				"- [foo](foo.md)",
-				"    - bar",
+				"    - foo *bar* baz",
 				"- [baz](baz.md)",
 			),
 			want: []string{
-				"2:7:expected a link, got Text",
+				"2:7:item has too many children (3)",
 			},
 		},
 		{
@@ -202,6 +218,44 @@ func TestParseSummaryErrors(t *testing.T) {
 			),
 			want: []string{
 				"3:5:expected a list, got Paragraph",
+			},
+		},
+		{
+			desc: "html block",
+			give: unlines(
+				"- [foo](foo.md)",
+				"    - [bar](bar.md)",
+				"    - <br/>",
+				"- [baz](baz.md)",
+			),
+			want: []string{
+				"3:7:expected text or paragraph, got HTMLBlock",
+			},
+		},
+		{
+			desc: "not link or text",
+			give: unlines(
+				"- [foo](foo.md)",
+				"    - [bar](bar.md)",
+				"    - `baz`",
+				"- [qux](qux.md)",
+			),
+			want: []string{
+				"3:7:expected a link or text, got CodeSpan",
+			},
+		},
+		{
+			desc: "non list item",
+			give: unlines(
+				"# Foo",
+				"- [foo](foo.md)",
+				"    - [bar](bar.md)",
+				"- [baz](baz.md)",
+				"",
+				"Random paragraph",
+			),
+			want: []string{
+				"6:1:expected a list or heading, got Paragraph",
 			},
 		},
 	}

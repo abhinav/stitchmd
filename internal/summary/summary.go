@@ -19,7 +19,7 @@ type TOC struct {
 }
 
 // Section is a single section of a summary document.
-// It's comprised of an optional title and a list of items.
+// It's comprised of an optional title and a tree of items.
 type Section struct {
 	// Title of the section, if any.
 	Title string
@@ -32,15 +32,18 @@ type Section struct {
 	AST []*goldast.Node[ast.Node]
 }
 
-// Item is a single item in a summary document.
-// It's built from a single link in the list.
+// Item is a single item in a table of contents.
+// It's built from links or single line titles in the list.
 type Item struct {
-	// Text is the link text.
+	// Text of the item.
+	//
+	// If the item was built from a link,
+	// this is the text inside the "[..]" section of the link.
 	Text string
 
-	// File is the path to the Markdown file.
-	// This is the text inside the "(..)" section of the link.
-	File string
+	// Target is the destination of this item, if any.
+	// This is blank if the item was built from a single line title.
+	Target string
 
 	// Depth is the depth of the item in the table of contents.
 	// Depth starts at zero for top-level items.

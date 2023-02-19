@@ -1,15 +1,15 @@
-package main
+package header
 
 import "strconv"
 
-// idGenerator generates slugs for headings.
+// IDGen generates slugs for headings.
 // It ensures that each slug is unique.
-type idGenerator struct {
+type IDGen struct {
 	used map[string]struct{}
 }
 
-func newIDGenerator() *idGenerator {
-	return &idGenerator{
+func NewIDGen() *IDGen {
+	return &IDGen{
 		used: make(map[string]struct{}),
 	}
 }
@@ -17,8 +17,8 @@ func newIDGenerator() *idGenerator {
 // GenerateID generates a unique ID slug for a heading.
 // It reports whether a header with this title automatically gets this slug.
 // If it returns false, the caller should render an anchor for the slug.
-func (g *idGenerator) GenerateID(title string) (slug string, auto bool) {
-	slug = titleSlug(title)
+func (g *IDGen) GenerateID(title string) (slug string, auto bool) {
+	slug = Slug(title)
 	for i := 0; ; i++ {
 		slug := slug
 		if i > 0 {

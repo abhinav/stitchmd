@@ -12,21 +12,23 @@ import (
 //
 //   - it's comprised of one or more sections
 //   - each section has an optional title header and a list of items
-//   - each item is a link to another Markdown document
+//   - each item is either a link to a Markdown document or a plain text title
 //   - items may be nested to indicate a hierarchy
 //
 // For example:
 //
 //	# User Guide
 //
-//	- [foo](foo.md)
-//	- [bar](bar.md)
-//	    - [baz](baz.md)
-//	- [qux](qux.md)
+//	- [Getting Started](getting-started.md)
+//	    - [Installation](installation.md)
+//	- Options
+//	    - [foo](foo.md)
+//	    - [bar](bar.md)
+//	- [Reference](reference.md)
 //
 //	# Appendix
 //
-//	- [Appendix A](appendix-a.md)
+//	- [FAQ](faq.md)
 //
 // Anything else will result in an error.
 func Parse(f *goldast.File) (*TOC, error) {
@@ -144,7 +146,7 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 		return
 	}
 
-	var link *goldast.Node[*ast.Link]
+	var n *goldast.Node[ast.Node]
 	switch ch := li.FirstChild(); ch.Kind() {
 	case ast.KindTextBlock, ast.KindParagraph:
 		switch count := ch.ChildCount(); count {
@@ -152,16 +154,9 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 			p.errs.Pushf(ch.Pos(), "list item is empty")
 			return
 		case 1:
-			// do nothing
+			n = ch.FirstChild()
 		default:
 			p.errs.Pushf(ch.Pos(), "item has too many children (%v)", count)
-			return
-		}
-
-		var ok bool
-		link, ok = goldast.Cast[*ast.Link](ch.FirstChild())
-		if !ok {
-			p.errs.Pushf(ch.Pos(), "expected a link, got %v", ch.FirstChild().Kind())
 			return
 		}
 	default:
@@ -169,15 +164,22 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 		return
 	}
 
-	dest := string(link.Node.Destination)
-	// TODO: validate dest
-	node := tree.Node[*Item]{
-		Value: &Item{
-			Text:  string(link.Node.Text(p.src)),
-			File:  dest,
-			Depth: p.depth,
-			Pos:   link.Pos(),
-		},
+	item := Item{
+		Depth: p.depth,
+		Pos:   n.Pos(),
+	}
+	if link, ok := goldast.Cast[*ast.Link](n); ok {
+		item.Text = string(link.Node.Text(p.src))
+		item.Target = string(link.Node.Destination)
+	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
+		item.Text = string(text.Node.Text(p.src))
+	} else {
+		p.errs.Pushf(n.Pos(), "expected a link or text, got %v", n.Kind())
+		return
+	}
+
+	tnode := tree.Node[*Item]{
+		Value: &item,
 	}
 	if hasChildren {
 		ls, ok := goldast.Cast[*ast.List](li.LastChild())
@@ -186,8 +188,8 @@ func (p *sectionParser) parseItem(li *goldast.Node[*ast.ListItem]) {
 			return
 		}
 
-		node.List = p.child().parse(ls)
+		tnode.List = p.child().parse(ls)
 	}
 
-	p.items = append(p.items, &node)
+	p.items = append(p.items, &tnode)
 }

@@ -1,4 +1,4 @@
-package main
+package header
 
 import (
 	"strings"
@@ -27,9 +27,9 @@ var _slugRemoveRanges = []*unicode.RangeTable{
 	unicode.Z,  // Separator
 }
 
-// titleSlug turns a heading title into a slug.
+// Slug turns a heading title into a slug.
 // The slug is intended to match the GitHub heading slugging algorithm.
-func titleSlug(s string) string {
+func Slug(s string) string {
 	var sb strings.Builder
 	for _, r := range s {
 		switch {
