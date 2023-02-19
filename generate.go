@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path/filepath"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
 	"github.com/yuin/goldmark/ast"
@@ -13,10 +12,9 @@ import (
 type generator struct {
 	idx int
 
-	W           io.Writer
-	Renderer    *mdfmt.Renderer
-	Log         *log.Logger
-	FilesByPath map[string]*markdownFile
+	W        io.Writer
+	Renderer *mdfmt.Renderer
+	Log      *log.Logger
 }
 
 func (g *generator) render(item markdownItem) error {
@@ -65,31 +63,5 @@ func (g *generator) renderTitle(title *markdownTitle) error {
 }
 
 func (g *generator) renderFile(file *markdownFile) error {
-	for _, h := range file.Headings {
-		// TODO: Flag for base level offset
-		h.AST.Node.Level += file.Item.Depth
-	}
-
-	// TODO: link rewriting should happen between collect and generate.
-	for _, l := range file.LocalLinks {
-		dst := filepath.Join(file.Dir, l.URL.Path)
-
-		dstf, ok := g.FilesByPath[dst]
-		if !ok {
-			// TODO: reduce depth of access here -- extract
-			// specific information in collector
-			g.Log.Printf("%v: link destination not found: %v", file.File.Positioner.Position(l.AST.Pos()), dst)
-			continue
-		}
-		l.URL.Path = ""
-		if l.URL.Fragment == "" && dstf.Title != nil {
-			// TODO: resolve section ID if fragment is non-empty
-			l.AST.Node.Destination = []byte("#" + dstf.Title.ID)
-		}
-	}
-	//
-	// TODO: image links relative to output file.
-	// TODO: if Title is nil, render
-
 	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
 }

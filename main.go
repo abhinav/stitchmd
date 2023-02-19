@@ -129,16 +129,20 @@ func (cmd *mainCmd) run(opts *params) error {
 		return errors.New("error reading markdown")
 	}
 
+	(&transformer{
+		Files: filesByPath,
+		Log:   cmd.log,
+	}).transformList(mdTree)
+
 	render := mdfmt.NewRenderer()
 	render.AddMarkdownOptions(
 		mdfmt.WithSoftWraps(),
 	)
 
 	g := &generator{
-		W:           output,
-		Renderer:    render,
-		Log:         cmd.log,
-		FilesByPath: filesByPath,
+		W:        output,
+		Renderer: render,
+		Log:      cmd.log,
 	}
 	return mdTree.Walk(g.render)
 }
