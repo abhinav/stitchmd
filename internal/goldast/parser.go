@@ -25,6 +25,12 @@ type File struct {
 	Pos pos.Pos
 }
 
+// Pos turns the given Pos into a Position
+// using this file's position information.
+func (f *File) Position(p pos.Pos) pos.Position {
+	return f.Positioner.Position(p)
+}
+
 // Parse parses a Markdown document using the provided Goldmark parser.
 func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOption) (*File, error) {
 	n, err := Wrap(p.Parse(text.NewReader(src), opts...))

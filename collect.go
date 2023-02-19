@@ -2,7 +2,6 @@ package main
 
 import (
 	"io/fs"
-	"path/filepath"
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
@@ -43,8 +42,9 @@ func (c *collector) Collect(f *goldast.File) (tree.List[markdownItem], error) {
 
 		sections[i] = &tree.Node[markdownItem]{
 			Value: &markdownSection{
-				File:    f,
-				Section: sec,
+				AST:        sec.AST,
+				Positioner: f.Positioner,
+				Source:     f.Source,
 			},
 			List: items,
 		}
@@ -56,8 +56,8 @@ func (c *collector) Collect(f *goldast.File) (tree.List[markdownItem], error) {
 func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 	if item.Target == "" {
 		return &markdownTitle{
-			Text: item.Text,
-			Item: item,
+			Text:  item.Text,
+			Depth: item.Depth,
 		}, nil
 	}
 
@@ -75,13 +75,12 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 	}
 
 	// TODO: title should be the first thing in the document
+
 	var (
-		headings []*markdownHeading
-
-		// Level 1 headings in the file.
-		h1s []*markdownHeading
+		h1s   []*goldast.Node[*ast.Heading]
+		h1IDs []string
+		// inv: len(h1s) == len(h1IDs)
 	)
-
 	err = goldast.Walk(f.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
@@ -92,19 +91,17 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 			return ast.WalkContinue, nil
 		}
 
+		// We generate IDs even though we don't use them
+		// to ensure that ID collisions are handled correctly.
 		title := n.Node.Text(src)
-		slug, _ := c.IDGen.GenerateID(string(title))
+		id, _ := c.IDGen.GenerateID(string(title))
+
 		// if !ok {
 		// 	// TODO: do we need to handle this?
 		// }
-		heading := &markdownHeading{
-			AST:   h,
-			ID:    slug,
-			Level: h.Node.Level,
-		}
-		headings = append(headings, heading)
-		if heading.Level == 1 {
-			h1s = append(h1s, heading)
+		if h.Node.Level == 1 {
+			h1s = append(h1s, h)
+			h1IDs = append(h1IDs, id)
 		}
 		return ast.WalkSkipChildren, nil
 	})
@@ -112,18 +109,15 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 		return nil, err
 	}
 
-	var title *markdownHeading
+	mf := &markdownFile{
+		File:  f,
+		Path:  item.Target,
+		Depth: item.Depth,
+	}
 	if len(h1s) == 1 {
-		title = h1s[0]
+		mf.ID = h1IDs[0]
 	}
 
-	mf := &markdownFile{
-		Dir:   filepath.Dir(item.Target),
-		Path:  item.Target,
-		File:  f,
-		Item:  item,
-		Title: title,
-	}
 	c.files[item.Target] = mf
 	return mf, nil
 }
@@ -141,34 +135,27 @@ type markdownItem interface {
 // TODO: Maybe this AST should be represented in terms of summary.Node somehow.
 
 type markdownSection struct {
-	File    *goldast.File
-	Section *summary.Section
+	// TODO: turn markdownSection AST into a single node
+	AST        []*goldast.Node[ast.Node]
+	Positioner pos.Positioner
+	Source     []byte
 }
 
 func (*markdownSection) markdownItem() {}
 
-type markdownHeading struct {
-	ID    string
-	AST   *goldast.Node[*ast.Heading]
-	Level int
-}
-
 type markdownFile struct {
-	Dir  string
-	Path string
-	File *goldast.File
-	Item *summary.Item
+	*goldast.File
 
-	// Level 1 heading acting as the title for the document.
-	// This is non-nil only if the document has exactly one such heading.
-	Title *markdownHeading
+	Path  string
+	Depth int
+	ID    string
 }
 
 func (*markdownFile) markdownItem() {}
 
 type markdownTitle struct {
-	Text string
-	Item *summary.Item
+	Text  string
+	Depth int
 }
 
 func (*markdownTitle) markdownItem() {}

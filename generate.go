@@ -40,9 +40,9 @@ func (g *generator) render(item markdownItem) error {
 
 func (g *generator) renderSection(sec *markdownSection) error {
 	// TODO: opt-out flag to not render the TOC
-	for _, n := range sec.Section.AST {
+	for _, n := range sec.AST {
 		// TODO: need to process the links in the TOC as well.
-		if err := g.Renderer.Render(g.W, sec.File.Source, n.Node); err != nil {
+		if err := g.Renderer.Render(g.W, sec.Source, n.Node); err != nil {
 			return err
 		}
 		io.WriteString(g.W, "\n")
@@ -51,7 +51,7 @@ func (g *generator) renderSection(sec *markdownSection) error {
 }
 
 func (g *generator) renderTitle(title *markdownTitle) error {
-	heading := ast.NewHeading(title.Item.Depth + 1) // offset?
+	heading := ast.NewHeading(title.Depth + 1) // offset?
 	heading.AppendChild(heading, ast.NewString([]byte(title.Text)))
 
 	if err := g.Renderer.Render(g.W, nil, heading); err != nil {
@@ -63,5 +63,5 @@ func (g *generator) renderTitle(title *markdownTitle) error {
 }
 
 func (g *generator) renderFile(file *markdownFile) error {
-	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
+	return g.Renderer.Render(g.W, file.Source, file.AST.Node)
 }

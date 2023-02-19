@@ -8,7 +8,6 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/summary"
 	"go.abhg.dev/mdreduce/internal/tree"
 )
 
@@ -36,7 +35,9 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformSection(section *markdownSection) {
-	for _, n := range section.Section.AST {
+	for _, n := range section.AST {
+		// TODO: turn non-Link nodes into Links to their respective
+		// sections.
 		goldast.Walk(n, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
 			if !enter {
 				return ast.WalkContinue, nil
@@ -45,7 +46,7 @@ func (t *transformer) transformSection(section *markdownSection) {
 				// TODO: put Positioner on markdownFile
 				if err := t.transformLink(".", l); err != nil {
 					t.Log.Printf("%v:%v",
-						section.File.Positioner.Position(l.Pos()), err)
+						section.Positioner.Position(l.Pos()), err)
 				}
 				return ast.WalkSkipChildren, nil
 			}
@@ -58,17 +59,18 @@ func (t *transformer) transformTitle(title *markdownTitle) {
 }
 
 func (t *transformer) transformFile(file *markdownFile) {
-	goldast.Walk(file.File.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
+	dir := filepath.Dir(file.Path)
+	goldast.Walk(file.AST, func(n *goldast.Node[ast.Node], enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
 		}
 		if l, ok := goldast.Cast[*ast.Link](n); ok {
 			// TODO: put Positioner on markdownFile
-			if err := t.transformLink(file.Dir, l); err != nil {
-				t.Log.Printf("%v:%v", file.File.Positioner.Position(l.Pos()), err)
+			if err := t.transformLink(dir, l); err != nil {
+				t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
 			}
 		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			t.transformHeading(file.Item, h)
+			h.Node.Level += file.Depth
 		} else {
 			return ast.WalkContinue, nil
 		}
@@ -77,10 +79,6 @@ func (t *transformer) transformFile(file *markdownFile) {
 
 		return ast.WalkSkipChildren, nil
 	})
-}
-
-func (t *transformer) transformHeading(item *summary.Item, h *goldast.Node[*ast.Heading]) {
-	h.Node.Level += item.Depth
 }
 
 func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) error {
@@ -101,8 +99,8 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 	}
 
 	// TODO: handle no file title
-	if u.Fragment == "" && to.Title != nil {
-		link.Node.Destination = []byte("#" + to.Title.ID)
+	if u.Fragment == "" && to.ID != "" {
+		link.Node.Destination = []byte("#" + to.ID)
 	}
 
 	// TODO: if u.Fragment was not empty,
