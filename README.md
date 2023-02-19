@@ -73,10 +73,10 @@ The output of mdreduce will be a single Markdown file with the
 contents of all the listed files inline,
 with their links rewritten to match their new location.
 
+<details>
+
 For example, the output of the above input file
 will be roughly in the following shape:
-
-<details>
 
 ```markdown
 # User Guide
