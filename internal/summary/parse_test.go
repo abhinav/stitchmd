@@ -25,10 +25,11 @@ func TestParseSummary(t *testing.T) {
 		}
 	}
 
-	section := func(title string, items ...*tree.Node[*Item]) *Section {
+	section := func(lvl int, title string, items ...*tree.Node[*Item]) *Section {
 		return &Section{
 			Title: title,
 			Items: tree.List[*Item](items),
+			Level: lvl,
 		}
 	}
 
@@ -47,7 +48,7 @@ func TestParseSummary(t *testing.T) {
 			desc: "one",
 			give: "- [foo](bar.md)",
 			want: toc(
-				section("", item(0, "foo", "bar.md")),
+				section(0, "", item(0, "foo", "bar.md")),
 			),
 		},
 		{
@@ -58,7 +59,7 @@ func TestParseSummary(t *testing.T) {
 				"- [baz](baz.md)",
 			),
 			want: toc(
-				section("",
+				section(0, "",
 					item(0, "foo", "foo.md"),
 					item(0, "bar", "bar.md"),
 					item(0, "baz", "baz.md")),
@@ -74,7 +75,7 @@ func TestParseSummary(t *testing.T) {
 				"    - [quux](quux.md)",
 			),
 			want: toc(
-				section("",
+				section(0, "",
 					item(0, "foo", "foo.md",
 						item(1, "bar", "bar.md"),
 						item(1, "baz", "baz.md")),
@@ -93,10 +94,10 @@ func TestParseSummary(t *testing.T) {
 				"- [baz](baz.md)",
 			),
 			want: toc(
-				section("User Guide",
+				section(1, "User Guide",
 					item(0, "foo", "foo.md"),
 					item(0, "bar", "bar.md")),
-				section("Appendix",
+				section(1, "Appendix",
 					item(0, "baz", "baz.md")),
 			),
 		},
@@ -109,7 +110,7 @@ func TestParseSummary(t *testing.T) {
 				"- baz",
 			),
 			want: toc(
-				section("",
+				section(0, "",
 					item(0, "foo", ""),
 					item(0, "bar", "",
 						item(1, "baz", "baz.md")),

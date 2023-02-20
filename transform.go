@@ -14,6 +14,9 @@ import (
 type transformer struct {
 	Files map[string]*markdownFile // path => file
 	Log   *log.Logger
+
+	// Level of the current section's header, if any.
+	sectionLevel int
 }
 
 func (t *transformer) transformList(items tree.List[markdownItem]) {
@@ -35,6 +38,7 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformSection(section *markdownSection) {
+	t.sectionLevel = section.Level
 	for _, n := range section.AST {
 		goldast.Walk(n, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 			if !enter {
@@ -53,6 +57,7 @@ func (t *transformer) transformSection(section *markdownSection) {
 }
 
 func (t *transformer) transformTitle(title *markdownTitle) {
+	title.Depth += t.sectionLevel
 }
 
 func (t *transformer) transformFile(file *markdownFile) {
@@ -66,7 +71,7 @@ func (t *transformer) transformFile(file *markdownFile) {
 				t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
 			}
 		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			h.Node.Level += file.Depth
+			h.Node.Level += file.Depth + t.sectionLevel
 		} else {
 			return ast.WalkContinue, nil
 		}

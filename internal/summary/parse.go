@@ -71,10 +71,14 @@ func (p *tocParser) parseSections(n *goldast.Any) {
 func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
 	var astNodes []*goldast.Any
 
-	var title string
+	var (
+		title string
+		level int
+	)
 	if h, ok := goldast.Cast[*ast.Heading](n); ok {
 		astNodes = append(astNodes, n)
 		title = string(h.Node.Text(p.src))
+		level = h.Node.Level
 		n = n.NextSibling()
 	}
 
@@ -95,6 +99,7 @@ func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
 	}).parse(ls)
 	return &Section{
 		Title: title,
+		Level: level,
 		Items: items,
 		AST:   astNodes,
 	}, n.NextSibling()

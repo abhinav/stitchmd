@@ -23,6 +23,10 @@ type Section struct {
 	// Title of the section, if any.
 	Title string
 
+	// Level of the section heading.
+	// This is a value between 1 and 6 if the section has a title.
+	Level int
+
 	// Items lists the items in the section
 	// and their nested items.
 	Items tree.List[*Item]

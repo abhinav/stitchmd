@@ -49,7 +49,7 @@ func (g *generator) renderSection(sec *markdownSection) error {
 }
 
 func (g *generator) renderTitle(title *markdownTitle) error {
-	heading := ast.NewHeading(title.Depth + 1) // offset?
+	heading := ast.NewHeading(title.Depth + 1) // depth => level
 	heading.AppendChild(heading, ast.NewString([]byte(title.Text)))
 
 	if err := g.Renderer.Render(g.W, nil, heading); err != nil {

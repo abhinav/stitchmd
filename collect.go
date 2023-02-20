@@ -45,6 +45,7 @@ func (c *collector) Collect(f *goldast.File) (tree.List[markdownItem], error) {
 				AST:        sec.AST,
 				Positioner: f.Positioner,
 				Source:     f.Source,
+				Level:      sec.Level,
 			},
 			List: items,
 		}
@@ -127,6 +128,7 @@ type markdownSection struct {
 	AST        []*goldast.Any
 	Positioner pos.Positioner
 	Source     []byte
+	Level      int
 }
 
 func (*markdownSection) markdownItem() {}
