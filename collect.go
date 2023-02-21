@@ -20,7 +20,7 @@ type collector struct {
 	FS     fs.FS
 	IDGen  *header.IDGen
 
-	files map[string]*markdownFile // path => file
+	files map[string]*markdownFileItem // path => file
 }
 
 func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
@@ -54,71 +54,14 @@ func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
 func (c *collector) collectItem(item summary.Item) (markdownItem, error) {
 	switch item := item.(type) {
 	case *summary.LinkItem:
-		return c.collectLinkItem(item)
+		return c.collectFileItem(item)
 
 	case *summary.TextItem:
-		id, _ := c.IDGen.GenerateID(item.Text)
-		return &markdownTitle{
-			TextItem: item,
-			TitleID:  id,
-		}, nil
+		return c.collectGroupItem(item), nil
 
 	default:
 		panic(fmt.Sprintf("unhandled item type %T", item))
 	}
-}
-
-func (c *collector) collectLinkItem(item *summary.LinkItem) (*markdownFile, error) {
-	src, err := fs.ReadFile(c.FS, item.Target)
-	if err != nil {
-		return nil, err
-	}
-
-	f, err := goldast.Parse(c.Parser, item.Target, src)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		h1s   []*goldast.Heading
-		h1IDs []string
-		// inv: len(h1s) == len(h1IDs)
-	)
-	err = goldast.Walk(f.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
-		if !enter {
-			return ast.WalkContinue, nil
-		}
-
-		h, ok := goldast.Cast[*ast.Heading](n)
-		if !ok {
-			return ast.WalkContinue, nil
-		}
-
-		// We generate IDs even though we don't use them
-		// to ensure that ID collisions are handled correctly.
-		title := n.Node.Text(src)
-		id, _ := c.IDGen.GenerateID(string(title))
-		if h.Node.Level == 1 {
-			h1s = append(h1s, h)
-			h1IDs = append(h1IDs, id)
-		}
-		return ast.WalkSkipChildren, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	mf := &markdownFile{
-		File: f,
-		Item: item,
-		Path: item.Target,
-	}
-	if len(h1s) == 1 {
-		mf.TitleID = h1IDs[0]
-	}
-
-	c.files[item.Target] = mf
-	return mf, nil
 }
 
 type markdownSection struct {
@@ -130,25 +73,107 @@ type markdownSection struct {
 
 // markdownItem unifies nodes of the following kinds:
 //
-//   - markdownFile: an included Markdown file
-//   - markdownTitle: a lone title without any file associated with it
+//   - markdownFileItem: an included Markdown file
+//   - markdownGroupItem: a title without any files, grouping other items
 type markdownItem interface {
 	markdownItem()
 }
 
-type markdownFile struct {
-	File    *goldast.File
-	Item    *summary.LinkItem
-	Path    string
-	TitleID string
+type markdownFileItem struct {
+	File  *goldast.File
+	Item  *summary.LinkItem
+	Title *markdownHeading
+	Path  string
+
+	Links    []*goldast.Link
+	Headings []*markdownHeading
 }
 
-func (*markdownFile) markdownItem() {}
+func (*markdownFileItem) markdownItem() {}
 
-type markdownTitle struct {
+func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, error) {
+	src, err := fs.ReadFile(c.FS, item.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := goldast.Parse(c.Parser, item.Target, src)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		links    []*goldast.Link
+		headings []*markdownHeading
+		h1s      []*markdownHeading
+	)
+	err = goldast.Walk(f.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
+		if !enter {
+			return ast.WalkContinue, nil
+		}
+
+		if l, ok := goldast.Cast[*ast.Link](n); ok {
+			links = append(links, l)
+		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
+			mh := c.newHeading(f, h)
+			headings = append(headings, mh)
+			if mh.Level() == 1 {
+				h1s = append(h1s, mh)
+			}
+		} else {
+			return ast.WalkContinue, nil
+		}
+
+		return ast.WalkSkipChildren, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	mf := &markdownFileItem{
+		File:     f,
+		Item:     item,
+		Path:     item.Target,
+		Links:    links,
+		Headings: headings,
+	}
+	if len(h1s) == 1 {
+		mf.Title = h1s[0]
+	}
+
+	c.files[item.Target] = mf
+	return mf, nil
+}
+
+type markdownGroupItem struct {
 	*summary.TextItem
 
-	TitleID string
+	ID string
 }
 
-func (*markdownTitle) markdownItem() {}
+func (*markdownGroupItem) markdownItem() {}
+
+func (c *collector) collectGroupItem(item *summary.TextItem) *markdownGroupItem {
+	id, _ := c.IDGen.GenerateID(item.Text)
+	return &markdownGroupItem{
+		TextItem: item,
+		ID:       id,
+	}
+}
+
+type markdownHeading struct {
+	AST *goldast.Heading
+	ID  string
+}
+
+func (c *collector) newHeading(f *goldast.File, h *goldast.Heading) *markdownHeading {
+	id, _ := c.IDGen.GenerateID(string(h.Node.Text(f.Source)))
+	return &markdownHeading{
+		AST: h,
+		ID:  id,
+	}
+}
+
+func (h *markdownHeading) Level() int {
+	return h.AST.Node.Level
+}

@@ -29,24 +29,6 @@ func (g *generator) Generate(sections []*markdownSection) error {
 	return nil
 }
 
-func (g *generator) renderItem(item markdownItem) error {
-	if g.idx > 0 {
-		io.WriteString(g.W, "\n")
-	}
-	g.idx++
-
-	switch item := item.(type) {
-	case *markdownTitle:
-		return g.renderTitle(item)
-
-	case *markdownFile:
-		return g.renderFile(item)
-
-	default:
-		panic(fmt.Sprintf("unknown markdown item type %T", item))
-	}
-}
-
 func (g *generator) renderSection(sec *markdownSection) error {
 	if t := sec.Title; t != nil {
 		if err := g.Renderer.Render(g.W, sec.Source, t.AST.Node); err != nil {
@@ -61,7 +43,25 @@ func (g *generator) renderSection(sec *markdownSection) error {
 	return nil
 }
 
-func (g *generator) renderTitle(title *markdownTitle) error {
+func (g *generator) renderItem(item markdownItem) error {
+	if g.idx > 0 {
+		io.WriteString(g.W, "\n")
+	}
+	g.idx++
+
+	switch item := item.(type) {
+	case *markdownGroupItem:
+		return g.renderGroupItem(item)
+
+	case *markdownFileItem:
+		return g.renderFileItem(item)
+
+	default:
+		panic(fmt.Sprintf("unknown markdown item type %T", item))
+	}
+}
+
+func (g *generator) renderGroupItem(title *markdownGroupItem) error {
 	heading := ast.NewHeading(title.Depth + 1) // depth => level
 	heading.AppendChild(heading, ast.NewString([]byte(title.Text)))
 
@@ -73,6 +73,6 @@ func (g *generator) renderTitle(title *markdownTitle) error {
 	return nil
 }
 
-func (g *generator) renderFile(file *markdownFile) error {
+func (g *generator) renderFileItem(file *markdownFileItem) error {
 	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
 }
