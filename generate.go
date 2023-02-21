@@ -6,7 +6,6 @@ import (
 	"log"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
-	"github.com/yuin/goldmark/ast"
 )
 
 type generator struct {
@@ -17,9 +16,9 @@ type generator struct {
 	Log      *log.Logger
 }
 
-func (g *generator) Generate(sections []*markdownSection) error {
-	for _, sec := range sections {
-		if err := g.renderSection(sec); err != nil {
+func (g *generator) Generate(coll *markdownCollection) error {
+	for _, sec := range coll.Sections {
+		if err := g.renderSection(coll.TOCFile.Source, sec); err != nil {
 			return err
 		}
 		if err := sec.Items.Walk(g.renderItem); err != nil {
@@ -29,14 +28,14 @@ func (g *generator) Generate(sections []*markdownSection) error {
 	return nil
 }
 
-func (g *generator) renderSection(sec *markdownSection) error {
+func (g *generator) renderSection(src []byte, sec *markdownSection) error {
 	if t := sec.Title; t != nil {
-		if err := g.Renderer.Render(g.W, sec.Source, t.AST.Node); err != nil {
+		if err := g.Renderer.Render(g.W, src, t.Node); err != nil {
 			return err
 		}
 	}
 
-	if err := g.Renderer.Render(g.W, sec.Source, sec.AST.Node); err != nil {
+	if err := g.Renderer.Render(g.W, src, sec.TOCItems.Node); err != nil {
 		return err
 	}
 	io.WriteString(g.W, "\n\n")
@@ -61,11 +60,8 @@ func (g *generator) renderItem(item markdownItem) error {
 	}
 }
 
-func (g *generator) renderGroupItem(title *markdownGroupItem) error {
-	heading := ast.NewHeading(title.Depth + 1) // depth => level
-	heading.AppendChild(heading, ast.NewString([]byte(title.Text)))
-
-	if err := g.Renderer.Render(g.W, nil, heading); err != nil {
+func (g *generator) renderGroupItem(group *markdownGroupItem) error {
+	if err := g.Renderer.Render(g.W, nil, group.Heading.AST.Node); err != nil {
 		return err
 	}
 	io.WriteString(g.W, "\n")

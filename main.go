@@ -118,7 +118,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	}
 
 	filesByPath := make(map[string]*markdownFileItem)
-	sections, err := (&collector{
+	coll, err := (&collector{
 		FS:     os.DirFS(opts.Dir),
 		Parser: mdParser,
 		IDGen:  header.NewIDGen(),
@@ -132,7 +132,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	(&transformer{
 		Files: filesByPath,
 		Log:   cmd.log,
-	}).transformList(sections)
+	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()
 	render.AddMarkdownOptions(
@@ -144,5 +144,5 @@ func (cmd *mainCmd) run(opts *params) error {
 		Renderer: render,
 		Log:      cmd.log,
 	}
-	return g.Generate(sections)
+	return g.Generate(coll)
 }
