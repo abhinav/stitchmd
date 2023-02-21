@@ -8,17 +8,14 @@ import (
 
 // File is a parsed Markdown file.
 type File struct {
-	// Name of the file, as passed to Parse.
-	Name string
-
 	// AST is the parsed Markdown file.
 	AST *Any
 
 	// Source is the original Markdown source.
 	Source []byte
 
-	// Positioner maps Pos values in the AST to file positions.
-	Positioner *pos.Converter
+	// Info holds position information about the file.
+	Info *pos.Info
 
 	// Pos is the starting position for this document.
 	Pos pos.Pos
@@ -27,7 +24,7 @@ type File struct {
 // Position turns the given Pos into a Position
 // using this file's position information.
 func (f *File) Position(p pos.Pos) pos.Position {
-	return f.Positioner.Position(p)
+	return f.Info.Position(p)
 }
 
 // Parse parses a Markdown document using the provided Goldmark parser.
@@ -40,10 +37,9 @@ func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOpt
 	}
 
 	return &File{
-		Name:       filename,
-		AST:        n,
-		Source:     src,
-		Pos:        n.Pos(),
-		Positioner: pos.FromContent(filename, src),
+		AST:    n,
+		Source: src,
+		Pos:    n.Pos(),
+		Info:   pos.FromContent(filename, src),
 	}, nil
 }

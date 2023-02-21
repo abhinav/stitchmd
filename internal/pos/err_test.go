@@ -16,7 +16,7 @@ func TestError(t *testing.T) {
 }
 
 func TestErrorList(t *testing.T) {
-	conv := fakePositioner(func(pos Pos) Position {
+	info := fakeInfo(func(pos Pos) Position {
 		switch pos {
 		case 42:
 			return Position{File: "foo", Line: 42, Column: 13}
@@ -28,7 +28,7 @@ func TestErrorList(t *testing.T) {
 		}
 	})
 
-	el := newErrorList(conv)
+	el := newErrorList(info)
 
 	t.Run("push", func(t *testing.T) {
 		defer el.Reset()
@@ -54,8 +54,8 @@ func TestErrorList(t *testing.T) {
 	})
 }
 
-type fakePositioner func(Pos) Position
+type fakeInfo func(Pos) Position
 
-func (f fakePositioner) Position(pos Pos) Position {
+func (f fakeInfo) Position(pos Pos) Position {
 	return f(pos)
 }

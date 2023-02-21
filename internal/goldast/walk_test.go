@@ -26,7 +26,7 @@ func TestWalk(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	posc := f.Positioner
+	posc := f.Info
 	require.Len(t, nodes, 5)
 	if n := nodes[0]; assert.IsType(t, new(ast.Document), n.Node) {
 		assert.Equal(t, "foo.md:1:1", posc.Position(n.Pos()).String(), "document")

@@ -96,7 +96,7 @@ func (n *Node[T]) AsAny() *Any {
 
 // Pos reports the position of the current block node.
 //
-// Use [pos.Converter] to convert this into a human-readable format.
+// Use [pos.Info] to convert this into a human-readable format.
 func (n *Node[T]) Pos() pos.Pos {
 	if n == nil {
 		return 0
