@@ -30,8 +30,9 @@ func (p Position) String() string {
 	return string(bs)
 }
 
-// Converter converts [Pos] to a [Position].
-type Converter struct {
+// Info holds richer position information.
+// It can be used to convert a Pos to a human-readable Position.
+type Info struct {
 	file string // optional
 	size int    // size of file
 	// lines is a list of offsets at which each line starts in source.
@@ -40,11 +41,11 @@ type Converter struct {
 	lines []int
 }
 
-// FromContent builds a position converter from the given source data.
+// FromContent builds a position [Info] from the given source data.
 //
 // Filename is optional.
-func FromContent(filename string, src []byte) *Converter {
-	con := Converter{file: filename, size: len(src)}
+func FromContent(filename string, src []byte) *Info {
+	con := Info{file: filename, size: len(src)}
 
 	var line int // first line starts at 0
 	for idx, c := range src {
@@ -60,11 +61,16 @@ func FromContent(filename string, src []byte) *Converter {
 	return &con
 }
 
+// Filename reports the name of the file as passed to FromContent.
+func (c *Info) Filename() string {
+	return c.file
+}
+
 // Position reports the human-readable position
 // for the given offset in the file.
 //
 // Position panics if the offset is out of bounds of the file.
-func (c *Converter) Position(pos Pos) Position {
+func (c *Info) Position(pos Pos) Position {
 	offset := int(pos) // pos is just an offset for now
 	if offset == 0 {
 		return Position{File: c.file, Line: 1, Column: 1}

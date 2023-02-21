@@ -14,7 +14,6 @@ func TestParse(t *testing.T) {
 	f, err := Parse(parser, "foo.md", []byte("hello world"))
 	require.NoError(t, err)
 
-	require.Equal(t, "foo.md", f.Name)
 	require.Equal(t, "hello world", string(f.Source))
-	require.Equal(t, "foo.md:1:1", f.Positioner.Position(f.Pos).String())
+	require.Equal(t, "foo.md:1:1", f.Info.Position(f.Pos).String())
 }

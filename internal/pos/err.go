@@ -26,23 +26,23 @@ func (e *Error) Unwrap() error {
 //
 // ErrorList is not thread-safe.
 type ErrorList struct {
-	conv interface {
+	info interface {
 		Position(Pos) Position
 	}
 	errs []*Error
 }
 
 // NewErrorList builds an ErrorList
-// that uses the provided Converter to report positions.
-func NewErrorList(conv *Converter) *ErrorList {
-	return newErrorList(conv)
+// that uses the provided [Info] to report positions.
+func NewErrorList(info *Info) *ErrorList {
+	return newErrorList(info)
 }
 
-func newErrorList(conv interface {
+func newErrorList(info interface {
 	Position(Pos) Position
 },
 ) *ErrorList {
-	return &ErrorList{conv: conv}
+	return &ErrorList{info: info}
 }
 
 // Pushf builds an error with the given message and arguments,
@@ -78,7 +78,7 @@ func (el *ErrorList) Err() error {
 	var errs []error
 	for _, e := range el.errs {
 		errs = append(errs,
-			fmt.Errorf("%v:%w", el.conv.Position(e.Pos), e.Err))
+			fmt.Errorf("%v:%w", el.info.Position(e.Pos), e.Err))
 	}
 	return errors.Join(errs...)
 }

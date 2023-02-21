@@ -29,7 +29,7 @@ func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
 		return nil, err
 	}
 
-	errs := pos.NewErrorList(f.Positioner)
+	errs := pos.NewErrorList(f.Info)
 	sections := make([]*markdownSection, len(toc.Sections))
 	for i, sec := range toc.Sections {
 		items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {

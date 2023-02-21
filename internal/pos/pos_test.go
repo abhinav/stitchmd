@@ -36,25 +36,26 @@ func TestPosition_String(t *testing.T) {
 	}
 }
 
-func TestConverter_Position_empty(t *testing.T) {
+func TestInfo_Position_empty(t *testing.T) {
 	t.Parallel()
 
-	conv := FromContent("foo", nil)
+	info := FromContent("foo", nil)
 	assert.Equal(t, Position{
 		File:   "foo",
 		Line:   1,
 		Column: 1,
-	}, conv.Position(0))
+	}, info.Position(0))
 
 	assert.Panics(t, func() {
-		conv.Position(1)
+		info.Position(1)
 	}, "out of range lookup should panic")
 }
 
-func TestConverter_Position(t *testing.T) {
+func TestInfo_Position(t *testing.T) {
 	t.Parallel()
 
-	conv := FromContent("a.txt", []byte("foo\nbar\nbaz\n"))
+	info := FromContent("a.txt", []byte("foo\nbar\nbaz\n"))
+	assert.Equal(t, "a.txt", info.Filename())
 
 	tests := []struct {
 		give Pos
@@ -78,7 +79,7 @@ func TestConverter_Position(t *testing.T) {
 		t.Run(fmt.Sprint(tt.give), func(t *testing.T) {
 			// t.Parallel()
 			//
-			assert.Equal(t, tt.want, conv.Position(tt.give))
+			assert.Equal(t, tt.want, info.Position(tt.give))
 		})
 	}
 }

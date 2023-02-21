@@ -32,7 +32,7 @@ import (
 //
 // Anything else will result in an error.
 func Parse(f *goldast.File) (*TOC, error) {
-	errs := pos.NewErrorList(f.Positioner)
+	errs := pos.NewErrorList(f.Info)
 	parser := newTOCParser(f.Source, errs)
 	parser.parseSections(f.AST)
 	if len(parser.sections) == 0 && errs.Len() == 0 {
