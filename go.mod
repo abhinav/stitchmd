@@ -3,7 +3,7 @@ module go.abhg.dev/mdreduce
 go 1.20
 
 require (
-	github.com/Kunde21/markdownfmt/v3 v3.0.0
+	github.com/Kunde21/markdownfmt/v3 v3.1.0
 	github.com/stretchr/testify v1.8.1
 	github.com/yuin/goldmark v1.5.2
 	gopkg.in/yaml.v3 v3.0.1
