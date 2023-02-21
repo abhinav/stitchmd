@@ -68,24 +68,13 @@ func (p *tocParser) parseSections(n *goldast.Any) {
 	}
 }
 
+// parseSection parses a Section from the given node.
 func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
-	var astNodes []*goldast.Any
+	title, n := p.parseSectionTitle(n)
 
-	var (
-		title string
-		level int
-	)
-	if h, ok := goldast.Cast[*ast.Heading](n); ok {
-		astNodes = append(astNodes, n)
-		title = string(h.Node.Text(p.src))
-		level = h.Node.Level
-		n = n.NextSibling()
-	}
-
-	astNodes = append(astNodes, n)
 	ls, ok := goldast.Cast[*ast.List](n)
 	if !ok {
-		if len(title) > 0 {
+		if title != nil {
 			p.errs.Pushf(n.Pos(), "expected a list, got %v", n.Kind())
 		} else {
 			p.errs.Pushf(n.Pos(), "expected a list or heading, got %v", n.Kind())
@@ -99,9 +88,21 @@ func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
 	}).parse(ls)
 	return &Section{
 		Title: title,
-		Level: level,
 		Items: items,
-		AST:   astNodes,
+		AST:   ls,
+	}, n.NextSibling()
+}
+
+func (p *tocParser) parseSectionTitle(n *goldast.Any) (*SectionTitle, *goldast.Any) {
+	h, ok := goldast.Cast[*ast.Heading](n)
+	if !ok {
+		return nil, n
+	}
+
+	return &SectionTitle{
+		Text:  string(h.Node.Text(p.src)),
+		Level: h.Node.Level,
+		AST:   h,
 	}, n.NextSibling()
 }
 
@@ -111,7 +112,7 @@ type sectionParser struct {
 	errs *pos.ErrorList
 
 	depth int // current depth
-	items tree.List[*Item]
+	items tree.List[Item]
 }
 
 func (p *sectionParser) child() *sectionParser {
@@ -122,7 +123,7 @@ func (p *sectionParser) child() *sectionParser {
 	}
 }
 
-func (p *sectionParser) parse(ls *goldast.List) tree.List[*Item] {
+func (p *sectionParser) parse(ls *goldast.List) tree.List[Item] {
 	for ch := ls.FirstChild(); ch != nil; ch = ch.NextSibling() {
 		li, ok := goldast.Cast[*ast.ListItem](ch)
 		if !ok {
@@ -169,23 +170,26 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 		return
 	}
 
-	item := Item{
-		Depth: p.depth,
-		Pos:   n.Pos(),
-	}
+	var item Item
 	if link, ok := goldast.Cast[*ast.Link](n); ok {
-		item.Text = string(link.Node.Text(p.src))
-		item.Target = string(link.Node.Destination)
+		item = &LinkItem{
+			Text:   string(link.Node.Text(p.src)),
+			Target: string(link.Node.Destination),
+			Depth:  p.depth,
+			AST:    link,
+		}
 	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
-		item.Text = string(text.Node.Text(p.src))
+		item = &TextItem{
+			Text:  string(text.Node.Text(p.src)),
+			Depth: p.depth,
+			AST:   text,
+		}
 	} else {
 		p.errs.Pushf(n.Pos(), "expected a link or text, got %v", n.Kind())
 		return
 	}
 
-	tnode := tree.Node[*Item]{
-		Value: &item,
-	}
+	tnode := tree.Node[Item]{Value: item}
 	if hasChildren {
 		ls, ok := goldast.Cast[*ast.List](li.LastChild())
 		if !ok {

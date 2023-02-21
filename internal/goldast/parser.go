@@ -34,6 +34,8 @@ func (f *File) Position(p pos.Pos) pos.Position {
 func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOption) (*File, error) {
 	n, err := Wrap(p.Parse(text.NewReader(src), opts...))
 	if err != nil {
+		// This is not typically possible because we'll always have
+		// position information for the top-level object.
 		return nil, err
 	}
 

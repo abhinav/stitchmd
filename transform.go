@@ -8,7 +8,6 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/tree"
 )
 
 type transformer struct {
@@ -19,49 +18,45 @@ type transformer struct {
 	sectionLevel int
 }
 
-func (t *transformer) transformList(items tree.List[markdownItem]) {
-	items.Walk(func(item markdownItem) error {
-		t.transformItem(item)
-		return nil
-	})
+func (t *transformer) transformList(sections []*markdownSection) {
+	for _, sec := range sections {
+		t.sectionLevel = sec.TitleLevel()
+		sec.Items.Walk(func(item markdownItem) error {
+			t.transformItem(item)
+			return nil
+		})
+	}
 }
 
 func (t *transformer) transformItem(item markdownItem) {
 	switch item := item.(type) {
-	case *markdownFile:
-		t.transformFile(item)
-	case *markdownSection:
-		t.transformSection(item)
 	case *markdownTitle:
 		t.transformTitle(item)
-	}
-}
-
-func (t *transformer) transformSection(section *markdownSection) {
-	t.sectionLevel = section.Level
-	for _, n := range section.AST {
-		goldast.Walk(n, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
-			if !enter {
-				return ast.WalkContinue, nil
-			}
-			if l, ok := goldast.Cast[*ast.Link](n); ok {
-				if err := t.transformLink(".", l); err != nil {
-					t.Log.Printf("%v:%v",
-						section.Positioner.Position(l.Pos()), err)
-				}
-				return ast.WalkSkipChildren, nil
-			}
-			return ast.WalkContinue, nil
-		})
+	case *markdownFile:
+		t.transformFile(item)
+	default:
+		panic(fmt.Sprintf("unknown item type: %T", item))
 	}
 }
 
 func (t *transformer) transformTitle(title *markdownTitle) {
 	title.Depth += t.sectionLevel
+
+	// Replace "Foo" in the list with "[Foo](#foo)".
+	item := title.AST
+	parent := item.Node.Parent()
+
+	link := ast.NewLink()
+	link.Destination = []byte("#" + title.TitleID)
+	parent.ReplaceChild(parent, item.Node, link)
+
+	link.AppendChild(link, item.Node)
 }
 
-func (t *transformer) transformFile(file *markdownFile) {
-	dir := filepath.Dir(file.Path)
+func (t *transformer) transformFile(f *markdownFile) {
+	_ = t.transformLink(".", f.Item.AST) // TODO: handle error
+	dir := filepath.Dir(f.Path)
+	file := f.File
 	goldast.Walk(file.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
@@ -71,7 +66,7 @@ func (t *transformer) transformFile(file *markdownFile) {
 				t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
 			}
 		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			h.Node.Level += file.Depth + t.sectionLevel
+			h.Node.Level += f.Item.ItemDepth() + t.sectionLevel
 		} else {
 			return ast.WalkContinue, nil
 		}
@@ -96,8 +91,8 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 		return fmt.Errorf("link to unknown file: %v", dst)
 	}
 
-	if u.Fragment == "" && to.ID != "" {
-		link.Node.Destination = []byte("#" + to.ID)
+	if u.Fragment == "" && to.TitleID != "" {
+		link.Node.Destination = []byte("#" + to.TitleID)
 	}
 
 	return nil

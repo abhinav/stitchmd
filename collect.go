@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 
 	"github.com/yuin/goldmark/ast"
@@ -22,46 +23,52 @@ type collector struct {
 	files map[string]*markdownFile // path => file
 }
 
-func (c *collector) Collect(f *goldast.File) (tree.List[markdownItem], error) {
+func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
 	toc, err := summary.Parse(f)
 	if err != nil {
 		return nil, err
 	}
 
 	errs := pos.NewErrorList(f.Positioner)
-	sections := make(tree.List[markdownItem], len(toc.Sections))
+	sections := make([]*markdownSection, len(toc.Sections))
 	for i, sec := range toc.Sections {
-		items := tree.TransformList(sec.Items, func(item *summary.Item) markdownItem {
+		items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {
 			i, err := c.collectItem(item)
 			if err != nil {
-				errs.Pushf(item.Pos, "%v", err)
+				errs.Pushf(item.ASTNode().Pos(), "%v", err)
 				return nil
 			}
 			return i
 		})
 
-		sections[i] = &tree.Node[markdownItem]{
-			Value: &markdownSection{
-				AST:        sec.AST,
-				Positioner: f.Positioner,
-				Source:     f.Source,
-				Level:      sec.Level,
-			},
-			List: items,
+		sections[i] = &markdownSection{
+			Source:  f.Source,
+			Section: sec,
+			Items:   items,
 		}
 	}
 
 	return sections, errs.Err()
 }
 
-func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
-	if item.Target == "" {
-		return &markdownTitle{
-			Text:  item.Text,
-			Depth: item.Depth,
-		}, nil
-	}
+func (c *collector) collectItem(item summary.Item) (markdownItem, error) {
+	switch item := item.(type) {
+	case *summary.LinkItem:
+		return c.collectLinkItem(item)
 
+	case *summary.TextItem:
+		id, _ := c.IDGen.GenerateID(item.Text)
+		return &markdownTitle{
+			TextItem: item,
+			TitleID:  id,
+		}, nil
+
+	default:
+		panic(fmt.Sprintf("unhandled item type %T", item))
+	}
+}
+
+func (c *collector) collectLinkItem(item *summary.LinkItem) (*markdownFile, error) {
 	src, err := fs.ReadFile(c.FS, item.Target)
 	if err != nil {
 		return nil, err
@@ -102,50 +109,46 @@ func (c *collector) collectItem(item *summary.Item) (markdownItem, error) {
 	}
 
 	mf := &markdownFile{
-		File:  f,
-		Path:  item.Target,
-		Depth: item.Depth,
+		File: f,
+		Item: item,
+		Path: item.Target,
 	}
 	if len(h1s) == 1 {
-		mf.ID = h1IDs[0]
+		mf.TitleID = h1IDs[0]
 	}
 
 	c.files[item.Target] = mf
 	return mf, nil
 }
 
+type markdownSection struct {
+	*summary.Section
+
+	Source []byte
+	Items  tree.List[markdownItem]
+}
+
 // markdownItem unifies nodes of the following kinds:
 //
-//   - markdownSection: a section in the TOC.
-//     It won't have other sections as children.
 //   - markdownFile: an included Markdown file
 //   - markdownTitle: a lone title without any file associated with it
 type markdownItem interface {
 	markdownItem()
 }
 
-type markdownSection struct {
-	AST        []*goldast.Any
-	Positioner pos.Positioner
-	Source     []byte
-	Level      int
-}
-
-func (*markdownSection) markdownItem() {}
-
 type markdownFile struct {
-	*goldast.File
-
-	Path  string
-	Depth int
-	ID    string
+	File    *goldast.File
+	Item    *summary.LinkItem
+	Path    string
+	TitleID string
 }
 
 func (*markdownFile) markdownItem() {}
 
 type markdownTitle struct {
-	Text  string
-	Depth int
+	*summary.TextItem
+
+	TitleID string
 }
 
 func (*markdownTitle) markdownItem() {}

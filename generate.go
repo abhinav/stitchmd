@@ -17,16 +17,25 @@ type generator struct {
 	Log      *log.Logger
 }
 
-func (g *generator) render(item markdownItem) error {
+func (g *generator) Generate(sections []*markdownSection) error {
+	for _, sec := range sections {
+		if err := g.renderSection(sec); err != nil {
+			return err
+		}
+		if err := sec.Items.Walk(g.renderItem); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *generator) renderItem(item markdownItem) error {
 	if g.idx > 0 {
 		io.WriteString(g.W, "\n")
 	}
 	g.idx++
 
 	switch item := item.(type) {
-	case *markdownSection:
-		return g.renderSection(item)
-
 	case *markdownTitle:
 		return g.renderTitle(item)
 
@@ -39,12 +48,16 @@ func (g *generator) render(item markdownItem) error {
 }
 
 func (g *generator) renderSection(sec *markdownSection) error {
-	for _, n := range sec.AST {
-		if err := g.Renderer.Render(g.W, sec.Source, n.Node); err != nil {
+	if t := sec.Title; t != nil {
+		if err := g.Renderer.Render(g.W, sec.Source, t.AST.Node); err != nil {
 			return err
 		}
-		io.WriteString(g.W, "\n")
 	}
+
+	if err := g.Renderer.Render(g.W, sec.Source, sec.AST.Node); err != nil {
+		return err
+	}
+	io.WriteString(g.W, "\n\n")
 	return nil
 }
 
@@ -61,5 +74,5 @@ func (g *generator) renderTitle(title *markdownTitle) error {
 }
 
 func (g *generator) renderFile(file *markdownFile) error {
-	return g.Renderer.Render(g.W, file.Source, file.AST.Node)
+	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
 }

@@ -1,0 +1,76 @@
+- name: no sections
+  filename: stdin
+  want:
+    - stdin:1:1:no sections found
+
+- name: no list or heading
+  give: foo
+  want:
+    - 1:1:expected a list or heading, got Paragraph
+
+- name: no list after heading
+  give: |
+    # Foo
+
+    bar
+  want:
+    - 3:1:expected a list, got Paragraph
+
+- name: styled title
+  give: |
+        - [foo](foo.md)
+            - foo *bar* baz
+        - [baz](baz.md)
+  want:
+    - 2:7:item has too many children (3)
+
+- name: too many children
+  give: |
+    - [foo](foo.md)
+        - [bar](bar.md)
+        - [baz](baz.md)
+        - qux
+
+          bar
+
+          baz
+  want:
+    - 4:7:item has too many children (3)
+
+- name: not a sublist
+  give: |
+    - [foo](foo.md)
+
+        not a list item
+    - [bar](bar.md)
+  want:
+    - 3:5:expected a list, got Paragraph
+
+- name: html block
+  give: |
+    - [foo](foo.md)
+        - [bar](bar.md)
+        - <br/>
+    - [baz](baz.md)
+  want:
+    - 3:7:expected text or paragraph, got HTMLBlock
+
+- name: not link or text
+  give: |
+    - [foo](foo.md)
+        - [bar](bar.md)
+        - `baz`
+    - [qux](qux.md)
+  want:
+    - 3:7:expected a link or text, got CodeSpan
+
+- name: non list item
+  give: |
+    # Foo
+    - [foo](foo.md)
+        - [bar](bar.md)
+    - [baz](baz.md)
+
+    Random paragraph
+  want:
+    - 6:1:expected a list or heading, got Paragraph

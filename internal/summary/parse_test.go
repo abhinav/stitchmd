@@ -1,6 +1,7 @@
 package summary
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -9,34 +10,50 @@ import (
 	"github.com/yuin/goldmark"
 	"go.abhg.dev/mdreduce/internal/goldast"
 	"go.abhg.dev/mdreduce/internal/tree"
+	"gopkg.in/yaml.v3"
 )
 
 func TestParseSummary(t *testing.T) {
 	t.Parallel()
 
-	item := func(depth int, text, dest string, children ...*tree.Node[*Item]) *tree.Node[*Item] {
-		return &tree.Node[*Item]{
-			Value: &Item{
+	linkItem := func(depth int, text, dest string, children ...*tree.Node[Item]) *tree.Node[Item] {
+		return &tree.Node[Item]{
+			Value: &LinkItem{
 				Text:   text,
 				Target: dest,
 				Depth:  depth,
 			},
-			List: tree.List[*Item](children),
+			List: tree.List[Item](children),
 		}
 	}
 
-	section := func(lvl int, title string, items ...*tree.Node[*Item]) *Section {
+	textItem := func(depth int, text string, children ...*tree.Node[Item]) *tree.Node[Item] {
+		return &tree.Node[Item]{
+			Value: &TextItem{
+				Text:  text,
+				Depth: depth,
+			},
+			List: tree.List[Item](children),
+		}
+	}
+
+	section := func(lvl int, title string, items ...*tree.Node[Item]) *Section {
+		var stitle *SectionTitle
+		if len(title) > 0 {
+			stitle = &SectionTitle{
+				Text:  title,
+				Level: lvl,
+			}
+		}
+
 		return &Section{
-			Title: title,
-			Items: tree.List[*Item](items),
-			Level: lvl,
+			Title: stitle,
+			Items: tree.List[Item](items),
 		}
 	}
 
 	toc := func(secs ...*Section) *TOC {
-		return &TOC{
-			Sections: secs,
-		}
+		return &TOC{Sections: secs}
 	}
 
 	tests := []struct {
@@ -48,7 +65,7 @@ func TestParseSummary(t *testing.T) {
 			desc: "one",
 			give: "- [foo](bar.md)",
 			want: toc(
-				section(0, "", item(0, "foo", "bar.md")),
+				section(0, "", linkItem(0, "foo", "bar.md")),
 			),
 		},
 		{
@@ -60,9 +77,9 @@ func TestParseSummary(t *testing.T) {
 			),
 			want: toc(
 				section(0, "",
-					item(0, "foo", "foo.md"),
-					item(0, "bar", "bar.md"),
-					item(0, "baz", "baz.md")),
+					linkItem(0, "foo", "foo.md"),
+					linkItem(0, "bar", "bar.md"),
+					linkItem(0, "baz", "baz.md")),
 			),
 		},
 		{
@@ -76,11 +93,11 @@ func TestParseSummary(t *testing.T) {
 			),
 			want: toc(
 				section(0, "",
-					item(0, "foo", "foo.md",
-						item(1, "bar", "bar.md"),
-						item(1, "baz", "baz.md")),
-					item(0, "qux", "qux.md",
-						item(1, "quux", "quux.md"))),
+					linkItem(0, "foo", "foo.md",
+						linkItem(1, "bar", "bar.md"),
+						linkItem(1, "baz", "baz.md")),
+					linkItem(0, "qux", "qux.md",
+						linkItem(1, "quux", "quux.md"))),
 			),
 		},
 		{
@@ -95,10 +112,10 @@ func TestParseSummary(t *testing.T) {
 			),
 			want: toc(
 				section(1, "User Guide",
-					item(0, "foo", "foo.md"),
-					item(0, "bar", "bar.md")),
+					linkItem(0, "foo", "foo.md"),
+					linkItem(0, "bar", "bar.md")),
 				section(1, "Appendix",
-					item(0, "baz", "baz.md")),
+					linkItem(0, "baz", "baz.md")),
 			),
 		},
 		{
@@ -111,10 +128,10 @@ func TestParseSummary(t *testing.T) {
 			),
 			want: toc(
 				section(0, "",
-					item(0, "foo", ""),
-					item(0, "bar", "",
-						item(1, "baz", "baz.md")),
-					item(0, "baz", "")),
+					textItem(0, "foo"),
+					textItem(0, "bar",
+						linkItem(1, "baz", "baz.md")),
+					textItem(0, "baz")),
 			),
 		},
 	}
@@ -130,15 +147,22 @@ func TestParseSummary(t *testing.T) {
 			got, err := Parse(f)
 			require.NoError(t, err)
 
-			// Zero-out the AST and position to make the test cases
-			// easier to write.
-			for _, s := range got.Sections {
-				if assert.NotNil(t, s.AST) {
-					s.AST = nil
+			// Strip ASTs from the result to make it easier to compare.
+			for _, sec := range got.Sections {
+				sec.AST = nil
+				if sec.Title != nil {
+					sec.Title.AST = nil
 				}
 
-				s.Items.Walk(func(i *Item) error {
-					i.Pos = 0
+				sec.Items.Walk(func(n Item) error {
+					switch i := n.(type) {
+					case *LinkItem:
+						i.AST = nil
+					case *TextItem:
+						i.AST = nil
+					default:
+						t.Fatalf("unexpected item type %T", i)
+					}
 					return nil
 				})
 			}
@@ -151,122 +175,23 @@ func TestParseSummary(t *testing.T) {
 func TestParseSummaryErrors(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		desc     string
-		give     string
-		filename string
-		want     []string
-	}{
-		{
-			desc:     "no sections",
-			filename: "stdin",
-			want: []string{
-				"stdin:1:1:no sections found",
-			},
-		},
-		{
-			desc: "no list or heading",
-			give: unlines("foo"),
-			want: []string{
-				"1:1:expected a list or heading, got Paragraph",
-			},
-		},
-		{
-			desc: "no list after heading",
-			give: unlines(
-				"# Foo",
-				"",
-				"bar",
-			),
-			want: []string{
-				"3:1:expected a list, got Paragraph",
-			},
-		},
-		{
-			desc: "styled title",
-			give: unlines(
-				"- [foo](foo.md)",
-				"    - foo *bar* baz",
-				"- [baz](baz.md)",
-			),
-			want: []string{
-				"2:7:item has too many children (3)",
-			},
-		},
-		{
-			desc: "too many children",
-			give: unlines(
-				"- [foo](foo.md)",
-				"    - [bar](bar.md)",
-				"    - [baz](baz.md)",
-				"    - qux",
-				"",
-				"      bar",
-				"",
-				"      baz",
-			),
-			want: []string{
-				"4:7:item has too many children (3)",
-			},
-		},
-		{
-			desc: "not a sublist",
-			give: unlines(
-				"- [foo](foo.md)",
-				"",
-				"    not a list item",
-				"- [bar](bar.md)",
-			),
-			want: []string{
-				"3:5:expected a list, got Paragraph",
-			},
-		},
-		{
-			desc: "html block",
-			give: unlines(
-				"- [foo](foo.md)",
-				"    - [bar](bar.md)",
-				"    - <br/>",
-				"- [baz](baz.md)",
-			),
-			want: []string{
-				"3:7:expected text or paragraph, got HTMLBlock",
-			},
-		},
-		{
-			desc: "not link or text",
-			give: unlines(
-				"- [foo](foo.md)",
-				"    - [bar](bar.md)",
-				"    - `baz`",
-				"- [qux](qux.md)",
-			),
-			want: []string{
-				"3:7:expected a link or text, got CodeSpan",
-			},
-		},
-		{
-			desc: "non list item",
-			give: unlines(
-				"# Foo",
-				"- [foo](foo.md)",
-				"    - [bar](bar.md)",
-				"- [baz](baz.md)",
-				"",
-				"Random paragraph",
-			),
-			want: []string{
-				"6:1:expected a list or heading, got Paragraph",
-			},
-		},
+	testdata, err := os.ReadFile("testdata/parse_errors.yaml")
+	require.NoError(t, err)
+
+	var tests []struct {
+		Name     string   `yaml:"name"`
+		Give     string   `yaml:"give"`
+		Filename string   `yaml:"filename"`
+		Want     []string `yaml:"want"`
 	}
+	require.NoError(t, yaml.Unmarshal(testdata, &tests))
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := goldast.Parse(goldmark.DefaultParser(), tt.filename, []byte(tt.give))
+			f, err := goldast.Parse(goldmark.DefaultParser(), tt.Filename, []byte(tt.Give))
 			require.NoError(t, err)
 			defer func() {
 				if t.Failed() {
@@ -284,8 +209,8 @@ func TestParseSummaryErrors(t *testing.T) {
 				gotErrors = []error{err}
 			}
 
-			require.Len(t, gotErrors, len(tt.want), "unexpected number of errors:\n%+v", err)
-			for i, wantErr := range tt.want {
+			require.Len(t, gotErrors, len(tt.Want), "unexpected number of errors:\n%+v", err)
+			for i, wantErr := range tt.Want {
 				assert.EqualError(t, gotErrors[i], wantErr)
 			}
 		})

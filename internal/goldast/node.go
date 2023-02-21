@@ -9,24 +9,6 @@ import (
 	"go.abhg.dev/mdreduce/internal/pos"
 )
 
-func posOf(n ast.Node) (pos.Pos, bool) {
-	if n == nil {
-		return 0, false
-	}
-	switch n.Type() {
-	case ast.TypeDocument:
-		return 0, true
-	case ast.TypeBlock:
-		lines := n.Lines()
-		if lines.Len() == 0 {
-			return 0, false
-		}
-		return pos.Pos(lines.At(0).Start), true
-	default:
-		return 0, false
-	}
-}
-
 // Node decorates a Goldmark Node with position information.
 type Node[T ast.Node] struct {
 	Node T
@@ -40,19 +22,14 @@ type Node[T ast.Node] struct {
 	parent *Any
 }
 
+// Aliases for wrappers of various node types.
 type (
-	// Any holds any Goldmark AST node.
-	Any = Node[ast.Node]
-
-	// Heading is a Goldmark heading node
-	// for both '#' and '---' style headers.
-	Heading = Node[*ast.Heading]
-
-	// List is a Goldmark list for both ordered and unordered lists.
-	List = Node[*ast.List]
-
-	// ListItem is a single item in a [List].
-	ListItem = Node[*ast.ListItem]
+	Any      = Node[ast.Node]      // generic node
+	Heading  = Node[*ast.Heading]  // heading
+	Link     = Node[*ast.Link]     // link
+	List     = Node[*ast.List]     // list
+	ListItem = Node[*ast.ListItem] // list item
+	Text     = Node[*ast.Text]     // text
 )
 
 // Wrap wraps a Goldmark AST node to track position information
@@ -79,7 +56,11 @@ func Cast[Dst, Src ast.Node](n *Node[Src]) (*Node[Dst], bool) {
 	if !ok {
 		return nil, false
 	}
-	return &Node[Dst]{Node: v, pos: n.pos}, true
+	return &Node[Dst]{
+		Node:   v,
+		pos:    n.pos,
+		parent: n.parent,
+	}, true
 }
 
 // MustCast is a variant of [Cast] that panics if the cast fails.
@@ -92,7 +73,9 @@ func MustCast[Dst, Src ast.Node](n *Node[Src]) *Node[Dst] {
 	return v
 }
 
-func (n *Node[T]) generalize() *Any {
+// AsAny casts this node to a generic node.
+// Unlike [Cast], this operation cannot fail.
+func (n *Node[T]) AsAny() *Any {
 	if n == nil {
 		return nil
 	}
@@ -126,18 +109,30 @@ func (n *Node[T]) Kind() ast.NodeKind {
 // NextSibling returns the next sibling of this node,
 // or nil if this is the last node in this chain.
 func (n *Node[T]) NextSibling() *Any {
+	if n == nil {
+		return nil
+	}
 	return n.relation((ast.Node).NextSibling, n.parent.Pos(), n.parent)
 }
 
 // PreviousSibling returns the previous sibling of this node,
 // or nil if this is the first node in this chain.
 func (n *Node[T]) PreviousSibling() *Any {
+	if n == nil {
+		return nil
+	}
 	return n.relation((ast.Node).PreviousSibling, n.parent.Pos(), n.parent)
 }
 
 // Parent returns the parent of this node,
 // or nil if this is the root node.
 func (n *Node[T]) Parent() *Any {
+	if n == nil {
+		return nil
+	}
+	if n.parent == nil {
+		return n.relation((ast.Node).Parent, n.pos, nil)
+	}
 	return n.parent
 }
 
@@ -152,24 +147,24 @@ func (n *Node[T]) ChildCount() int {
 // FirstChild returns the first child of this node,
 // or nil if this has no children.
 func (n *Node[T]) FirstChild() *Any {
-	return n.relation((ast.Node).FirstChild, n.pos, n.generalize())
+	return n.relation((ast.Node).FirstChild, n.pos, n.AsAny())
 }
 
 // LastChild returns the last child of this node,
 // or nil if this has no children.
 func (n *Node[T]) LastChild() *Any {
-	return n.relation((ast.Node).LastChild, n.pos, n.generalize())
+	return n.relation((ast.Node).LastChild, n.pos, n.AsAny())
 }
 
+// relation is a helper for implementing the various relation methods.
+// It returns the result of calling relf on the underlying node,
+// wrapped in a *Node[T].
+// If the new node has no position information, it is set to fallback.
 func (n *Node[T]) relation(
 	relf func(ast.Node) ast.Node,
 	fallback pos.Pos,
 	parent *Any,
 ) *Any {
-	if n == nil {
-		return nil
-	}
-
 	rel := relf(n.Node)
 	if rel == nil {
 		return nil
@@ -184,5 +179,23 @@ func (n *Node[T]) relation(
 		Node:   rel,
 		pos:    p,
 		parent: parent,
+	}
+}
+
+func posOf(n ast.Node) (pos.Pos, bool) {
+	if n == nil {
+		return 0, false
+	}
+	switch n.Type() {
+	case ast.TypeDocument:
+		return 0, true
+	case ast.TypeBlock:
+		lines := n.Lines()
+		if lines.Len() == 0 {
+			return 0, false
+		}
+		return pos.Pos(lines.At(0).Start), true
+	default:
+		return 0, false
 	}
 }
