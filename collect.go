@@ -23,7 +23,12 @@ type collector struct {
 	files map[string]*markdownFileItem // path => file
 }
 
-func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
+type markdownCollection struct {
+	TOCFile  *goldast.File
+	Sections []*markdownSection
+}
+
+func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
 	toc, err := summary.Parse(f)
 	if err != nil {
 		return nil, err
@@ -32,23 +37,56 @@ func (c *collector) Collect(f *goldast.File) ([]*markdownSection, error) {
 	errs := pos.NewErrorList(f.Info)
 	sections := make([]*markdownSection, len(toc.Sections))
 	for i, sec := range toc.Sections {
-		items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {
-			i, err := c.collectItem(item)
-			if err != nil {
-				errs.Pushf(item.ASTNode().Pos(), "%v", err)
-				return nil
-			}
-			return i
-		})
-
-		sections[i] = &markdownSection{
-			Source:  f.Source,
-			Section: sec,
-			Items:   items,
-		}
+		sections[i] = c.collectSection(errs, sec)
 	}
 
-	return sections, errs.Err()
+	return &markdownCollection{
+		TOCFile:  f,
+		Sections: sections,
+	}, errs.Err()
+}
+
+type markdownSection struct {
+	Title    *goldast.Heading
+	TOCItems *goldast.List
+	Items    tree.List[markdownItem]
+}
+
+func (s *markdownSection) TitleLevel() int {
+	if s.Title != nil {
+		return s.Title.Node.Level
+	}
+	return 0
+}
+
+func (c *collector) collectSection(errs *pos.ErrorList, sec *summary.Section) *markdownSection {
+	items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {
+		i, err := c.collectItem(item)
+		if err != nil {
+			errs.Pushf(item.ASTNode().Pos(), "%v", err)
+			return nil
+		}
+		return i
+	})
+
+	var title *goldast.Heading
+	if sec.Title != nil {
+		title = sec.Title.AST
+	}
+
+	return &markdownSection{
+		Title:    title,
+		TOCItems: sec.AST,
+		Items:    items,
+	}
+}
+
+// markdownItem unifies nodes of the following kinds:
+//
+//   - markdownFileItem: an included Markdown file
+//   - markdownGroupItem: a title without any files, grouping other items
+type markdownItem interface {
+	markdownItem()
 }
 
 func (c *collector) collectItem(item summary.Item) (markdownItem, error) {
@@ -64,28 +102,28 @@ func (c *collector) collectItem(item summary.Item) (markdownItem, error) {
 	}
 }
 
-type markdownSection struct {
-	*summary.Section
-
-	Source []byte
-	Items  tree.List[markdownItem]
-}
-
-// markdownItem unifies nodes of the following kinds:
-//
-//   - markdownFileItem: an included Markdown file
-//   - markdownGroupItem: a title without any files, grouping other items
-type markdownItem interface {
-	markdownItem()
-}
-
 type markdownFileItem struct {
-	File  *goldast.File
-	Item  *summary.LinkItem
-	Title *markdownHeading
-	Path  string
+	// TOCLink is the original link in the TOC
+	// that referenced the Markdown file.
+	TOCLink *goldast.Link
 
-	Links    []*goldast.Link
+	// Depth is the depth at which the link was found in the TOC.
+	TOCDepth int
+
+	// File is the parsed Markdown file
+	// that the link points to.
+	File *goldast.File
+
+	// Title is the title of the Markdown file, if any.
+	Title *markdownHeading
+
+	// Path is the path to the Markdown file.
+	Path string
+
+	// Links holds all links that were found in the Markdown file.
+	Links []*goldast.Link
+
+	// Headings holds all headings that were found in the Markdown file.
 	Headings []*markdownHeading
 }
 
@@ -131,8 +169,9 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 	}
 
 	mf := &markdownFileItem{
+		TOCLink:  item.AST,
+		TOCDepth: item.Depth,
 		File:     f,
-		Item:     item,
 		Path:     item.Target,
 		Links:    links,
 		Headings: headings,
@@ -146,18 +185,25 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 }
 
 type markdownGroupItem struct {
-	*summary.TextItem
-
-	ID string
+	TOCText  *goldast.Text
+	TOCDepth int
+	Heading  *markdownHeading
 }
 
 func (*markdownGroupItem) markdownItem() {}
 
 func (c *collector) collectGroupItem(item *summary.TextItem) *markdownGroupItem {
+	h := ast.NewHeading(1) // will be transformed
+	h.AppendChild(h, ast.NewString([]byte(item.Text)))
+
 	id, _ := c.IDGen.GenerateID(item.Text)
 	return &markdownGroupItem{
-		TextItem: item,
-		ID:       id,
+		TOCText:  item.AST,
+		TOCDepth: item.Depth,
+		Heading: &markdownHeading{
+			AST: goldast.WithPos(h, 0 /* never used */),
+			ID:  id,
+		},
 	}
 }
 

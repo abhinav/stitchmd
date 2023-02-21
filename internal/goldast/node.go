@@ -51,6 +51,11 @@ func Wrap[T ast.Node](n T) (*Node[T], error) {
 	return &Node[T]{Node: n, pos: p}, nil
 }
 
+// WithPos builds a node with a given position.
+func WithPos[T ast.Node](n T, p pos.Pos) *Node[T] {
+	return &Node[T]{Node: n, pos: p}
+}
+
 // Cast casts the value inside a node
 // reporting whether the cast was successful.
 //
