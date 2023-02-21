@@ -117,7 +117,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		return err
 	}
 
-	filesByPath := make(map[string]*markdownFile)
+	filesByPath := make(map[string]*markdownFileItem)
 	sections, err := (&collector{
 		FS:     os.DirFS(opts.Dir),
 		Parser: mdParser,

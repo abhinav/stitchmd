@@ -11,7 +11,7 @@ import (
 )
 
 type transformer struct {
-	Files map[string]*markdownFile // path => file
+	Files map[string]*markdownFileItem // path => file
 	Log   *log.Logger
 
 	// Level of the current section's header, if any.
@@ -30,16 +30,16 @@ func (t *transformer) transformList(sections []*markdownSection) {
 
 func (t *transformer) transformItem(item markdownItem) {
 	switch item := item.(type) {
-	case *markdownTitle:
+	case *markdownGroupItem:
 		t.transformTitle(item)
-	case *markdownFile:
+	case *markdownFileItem:
 		t.transformFile(item)
 	default:
 		panic(fmt.Sprintf("unknown item type: %T", item))
 	}
 }
 
-func (t *transformer) transformTitle(title *markdownTitle) {
+func (t *transformer) transformTitle(title *markdownGroupItem) {
 	title.Depth += t.sectionLevel
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
@@ -47,32 +47,26 @@ func (t *transformer) transformTitle(title *markdownTitle) {
 	parent := item.Node.Parent()
 
 	link := ast.NewLink()
-	link.Destination = []byte("#" + title.TitleID)
+	link.Destination = []byte("#" + title.ID)
 	parent.ReplaceChild(parent, item.Node, link)
 
 	link.AppendChild(link, item.Node)
 }
 
-func (t *transformer) transformFile(f *markdownFile) {
+func (t *transformer) transformFile(f *markdownFileItem) {
 	_ = t.transformLink(".", f.Item.AST) // TODO: handle error
 	dir := filepath.Dir(f.Path)
 	file := f.File
-	goldast.Walk(file.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
-		if !enter {
-			return ast.WalkContinue, nil
-		}
-		if l, ok := goldast.Cast[*ast.Link](n); ok {
-			if err := t.transformLink(dir, l); err != nil {
-				t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
-			}
-		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			h.Node.Level += f.Item.ItemDepth() + t.sectionLevel
-		} else {
-			return ast.WalkContinue, nil
-		}
 
-		return ast.WalkSkipChildren, nil
-	})
+	for _, l := range f.Links {
+		if err := t.transformLink(dir, l); err != nil {
+			t.Log.Printf("%v:%v", file.Position(l.Pos()), err)
+		}
+	}
+
+	for _, h := range f.Headings {
+		h.AST.Node.Level += f.Item.ItemDepth() + t.sectionLevel
+	}
 }
 
 func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) error {
@@ -91,8 +85,8 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 		return fmt.Errorf("link to unknown file: %v", dst)
 	}
 
-	if u.Fragment == "" && to.TitleID != "" {
-		link.Node.Destination = []byte("#" + to.TitleID)
+	if u.Fragment == "" && to.Title != nil {
+		link.Node.Destination = []byte("#" + to.Title.ID)
 	}
 
 	return nil
