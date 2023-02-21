@@ -28,7 +28,7 @@ func TestErrorList(t *testing.T) {
 		}
 	})
 
-	el := NewErrorList(conv)
+	el := newErrorList(conv)
 
 	t.Run("push", func(t *testing.T) {
 		defer el.Reset()

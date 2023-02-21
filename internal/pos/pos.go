@@ -30,13 +30,6 @@ func (p Position) String() string {
 	return string(bs)
 }
 
-// Positioner turns a [Pos] into a [Position].
-type Positioner interface {
-	Position(Pos) Position
-}
-
-var _ Positioner = (*Converter)(nil)
-
 // Converter converts [Pos] to a [Position].
 type Converter struct {
 	file string // optional
