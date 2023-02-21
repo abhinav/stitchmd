@@ -26,13 +26,22 @@ func (e *Error) Unwrap() error {
 //
 // ErrorList is not thread-safe.
 type ErrorList struct {
-	conv Positioner
+	conv interface {
+		Position(Pos) Position
+	}
 	errs []*Error
 }
 
 // NewErrorList builds an ErrorList
 // that uses the provided Converter to report positions.
-func NewErrorList(conv Positioner) *ErrorList {
+func NewErrorList(conv *Converter) *ErrorList {
+	return newErrorList(conv)
+}
+
+func newErrorList(conv interface {
+	Position(Pos) Position
+},
+) *ErrorList {
 	return &ErrorList{conv: conv}
 }
 
