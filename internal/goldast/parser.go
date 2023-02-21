@@ -24,7 +24,7 @@ type File struct {
 	Pos pos.Pos
 }
 
-// Pos turns the given Pos into a Position
+// Position turns the given Pos into a Position
 // using this file's position information.
 func (f *File) Position(p pos.Pos) pos.Position {
 	return f.Positioner.Position(p)

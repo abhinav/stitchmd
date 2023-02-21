@@ -20,7 +20,7 @@ import (
 	"go.abhg.dev/mdreduce/internal/header"
 )
 
-var _version string = "dev"
+var _version = "dev"
 
 func main() {
 	cmd := mainCmd{

@@ -1,3 +1,6 @@
+// Package goldast defines wrappers around Goldmark's AST package and types.
+// In particular, its [Node] type is able to track position of a block
+// in the document that it came from.
 package goldast
 
 import (
@@ -22,14 +25,19 @@ type Node[T ast.Node] struct {
 	parent *Any
 }
 
-// Aliases for wrappers of various node types.
 type (
-	Any      = Node[ast.Node]      // generic node
-	Heading  = Node[*ast.Heading]  // heading
-	Link     = Node[*ast.Link]     // link
-	List     = Node[*ast.List]     // list
-	ListItem = Node[*ast.ListItem] // list item
-	Text     = Node[*ast.Text]     // text
+	// Any is a generic wrapped Markdown node.
+	Any = Node[ast.Node]
+	// Heading is a wrapped Markdown heading.
+	Heading = Node[*ast.Heading]
+	// Link is a wrapped Markdown link.
+	Link = Node[*ast.Link]
+	// List is a wrapped Markdown list.
+	List = Node[*ast.List]
+	// ListItem is a wrapped Markdown list item.
+	ListItem = Node[*ast.ListItem]
+	// Text is a wrapped Markdown text.
+	Text = Node[*ast.Text]
 )
 
 // Wrap wraps a Goldmark AST node to track position information

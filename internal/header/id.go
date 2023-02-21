@@ -1,3 +1,4 @@
+// Package header generates unique IDs for Markdown headings.
 package header
 
 import "strconv"
@@ -8,6 +9,8 @@ type IDGen struct {
 	used map[string]struct{}
 }
 
+// NewIDGen builds a new ID generator
+// that enforces uniqueness of slugs.
 func NewIDGen() *IDGen {
 	return &IDGen{
 		used: make(map[string]struct{}),

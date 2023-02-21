@@ -30,6 +30,8 @@ type Section struct {
 	AST *goldast.List
 }
 
+// TitleLevel reports the level of the title for this section.
+// It returns zero if there is no title.
 func (s *Section) TitleLevel() int {
 	if s.Title == nil {
 		return 0
@@ -37,10 +39,16 @@ func (s *Section) TitleLevel() int {
 	return s.Title.Level
 }
 
+// SectionTitle holds information about a section title.
 type SectionTitle struct {
-	Text  string
+	// Text of the title.
+	Text string
+
+	// Level of the title.
 	Level int
-	AST   *goldast.Heading
+
+	// AST node that this title was built from.
+	AST *goldast.Heading
 }
 
 // Item is a single item in a section.

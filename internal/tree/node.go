@@ -1,3 +1,4 @@
+// Package tree defines a general purpose tree data structure.
 package tree
 
 import "fmt"
