@@ -123,6 +123,10 @@ type markdownFileItem struct {
 	// Title is the title of the Markdown file, if any.
 	Title *markdownHeading
 
+	// TOCTitle is the title for this file generated from the TOC text.
+	// Only one of Title and TOCTitle is set.
+	TOCTitle *markdownHeading
+
 	// Path is the path to the Markdown file.
 	Path string
 
@@ -191,6 +195,13 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 	}
 	if len(h1s) == 1 {
 		mf.Title = h1s[0]
+	} else {
+		heading := ast.NewHeading(1)
+		heading.AppendChild(
+			heading,
+			ast.NewString([]byte(item.Text)),
+		)
+		mf.TOCTitle = c.newHeading(f, fidgen, goldast.WithPos(heading, f.Pos))
 	}
 
 	c.files[item.Target] = mf

@@ -58,6 +58,33 @@ func (t *transformer) transformTitle(group *markdownGroupItem) {
 }
 
 func (t *transformer) transformFile(f *markdownFileItem) {
+	if f.Title == nil {
+		// The included file does not have a title.
+		// We'll generate one from the TOC item text.
+
+		// If there are any existing level 1 headers,
+		// they must all be pushed down one level
+		// to make room for the new level 1 header.
+		var levelOffset int
+		for _, h := range f.Headings {
+			if h.AST.Node.Level == 1 {
+				levelOffset = 1
+				break
+			}
+		}
+		if levelOffset > 0 {
+			for _, h := range f.Headings {
+				h.AST.Node.Level += levelOffset
+			}
+		}
+
+		f.Headings = append(f.Headings, f.TOCTitle)
+	}
+
+	for _, h := range f.Headings {
+		h.AST.Node.Level += f.TOCDepth + t.sectionLevel
+	}
+
 	if err := t.transformLink(".", f.TOCLink); err != nil {
 		t.Log.Printf("%v:%v", t.tocFile.Position(f.TOCLink.Pos()), err)
 	}
@@ -67,10 +94,6 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 		if err := t.transformLink(dir, l); err != nil {
 			t.Log.Printf("%v:%v", f.File.Position(l.Pos()), err)
 		}
-	}
-
-	for _, h := range f.Headings {
-		h.AST.Node.Level += f.TOCDepth + t.sectionLevel
 	}
 }
 
@@ -98,8 +121,12 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 		if h, ok := to.HeadingsByOldID[u.Fragment]; ok {
 			u.Fragment = h.ID
 		}
-	} else if to.Title != nil {
-		u.Fragment = to.Title.ID
+	} else {
+		if to.Title != nil {
+			u.Fragment = to.Title.ID
+		} else {
+			u.Fragment = to.TOCTitle.ID
+		}
 	}
 	link.Node.Destination = []byte(u.String())
 
