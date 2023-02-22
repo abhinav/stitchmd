@@ -117,12 +117,10 @@ func (cmd *mainCmd) run(opts *params) error {
 		return err
 	}
 
-	filesByPath := make(map[string]*markdownFileItem)
 	coll, err := (&collector{
 		FS:     os.DirFS(opts.Dir),
 		Parser: mdParser,
 		IDGen:  header.NewIDGen(),
-		files:  filesByPath,
 	}).Collect(f)
 	if err != nil {
 		cmd.log.Println(err)
@@ -130,8 +128,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	}
 
 	(&transformer{
-		Files: filesByPath,
-		Log:   cmd.log,
+		Log: cmd.log,
 	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()

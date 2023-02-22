@@ -20,15 +20,20 @@ type collector struct {
 	FS     fs.FS
 	IDGen  *header.IDGen
 
-	files map[string]*markdownFileItem // path => file
+	files map[string]*markdownFileItem
 }
 
 type markdownCollection struct {
 	TOCFile  *goldast.File
 	Sections []*markdownSection
+
+	// FilesByPath maps a Markdown file path to its parsed representation.
+	FilesByPath map[string]*markdownFileItem
 }
 
 func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
+	c.files = make(map[string]*markdownFileItem)
+
 	toc, err := summary.Parse(f)
 	if err != nil {
 		return nil, err
@@ -41,8 +46,9 @@ func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
 	}
 
 	return &markdownCollection{
-		TOCFile:  f,
-		Sections: sections,
+		TOCFile:     f,
+		Sections:    sections,
+		FilesByPath: c.files,
 	}, errs.Err()
 }
 
@@ -125,6 +131,8 @@ type markdownFileItem struct {
 
 	// Headings holds all headings that were found in the Markdown file.
 	Headings []*markdownHeading
+
+	HeadingsByOldID map[string]*markdownHeading
 }
 
 func (*markdownFileItem) markdownItem() {}
@@ -140,11 +148,14 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 		return nil, err
 	}
 
+	fidgen := header.NewIDGen()
+
 	var (
 		links    []*goldast.Link
 		headings []*markdownHeading
 		h1s      []*markdownHeading
 	)
+	headingsByOldID := make(map[string]*markdownHeading)
 	err = goldast.Walk(f.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
 		if !enter {
 			return ast.WalkContinue, nil
@@ -153,11 +164,12 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 		if l, ok := goldast.Cast[*ast.Link](n); ok {
 			links = append(links, l)
 		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			mh := c.newHeading(f, h)
+			mh := c.newHeading(f, fidgen, h)
 			headings = append(headings, mh)
 			if mh.Level() == 1 {
 				h1s = append(h1s, mh)
 			}
+			headingsByOldID[mh.OldID] = mh
 		} else {
 			return ast.WalkContinue, nil
 		}
@@ -169,12 +181,13 @@ func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, 
 	}
 
 	mf := &markdownFileItem{
-		TOCLink:  item.AST,
-		TOCDepth: item.Depth,
-		File:     f,
-		Path:     item.Target,
-		Links:    links,
-		Headings: headings,
+		TOCLink:         item.AST,
+		TOCDepth:        item.Depth,
+		File:            f,
+		Path:            item.Target,
+		Links:           links,
+		Headings:        headings,
+		HeadingsByOldID: headingsByOldID,
 	}
 	if len(h1s) == 1 {
 		mf.Title = h1s[0]
@@ -210,13 +223,19 @@ func (c *collector) collectGroupItem(item *summary.TextItem) *markdownGroupItem 
 type markdownHeading struct {
 	AST *goldast.Heading
 	ID  string
+
+	// ID of the heading in the original file.
+	OldID string
 }
 
-func (c *collector) newHeading(f *goldast.File, h *goldast.Heading) *markdownHeading {
-	id, _ := c.IDGen.GenerateID(string(h.Node.Text(f.Source)))
+func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *goldast.Heading) *markdownHeading {
+	text := string(h.Node.Text(f.Source))
+	id, _ := c.IDGen.GenerateID(text)
+	oldID, _ := fgen.GenerateID(text)
 	return &markdownHeading{
-		AST: h,
-		ID:  id,
+		AST:   h,
+		ID:    id,
+		OldID: oldID,
 	}
 }
 
