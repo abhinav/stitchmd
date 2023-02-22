@@ -1,4 +1,4 @@
-package summary
+package stitch
 
 import (
 	"github.com/yuin/goldmark/ast"
@@ -8,107 +8,16 @@ import (
 	"go.abhg.dev/stitchmd/internal/tree"
 )
 
-// Parse parses a summary from a Markdown document.
-// The summary is expected in a very specific format:
-//
-//   - it's comprised of one or more sections
-//   - each section has an optional title header and a list of items
-//   - each item is either a link to a Markdown document or a plain text title
-//   - items may be nested to indicate a hierarchy
-//
-// For example:
-//
-//	# User Guide
-//
-//	- [Getting Started](getting-started.md)
-//	    - [Installation](installation.md)
-//	- Options
-//	    - [foo](foo.md)
-//	    - [bar](bar.md)
-//	- [Reference](reference.md)
-//
-//	# Appendix
-//
-//	- [FAQ](faq.md)
-//
-// Anything else will result in an error.
-func Parse(f *goldast.File) (*TOC, error) {
-	errs := pos.NewErrorList(f.Info)
-	parser := newTOCParser(f.Source, errs)
-	parser.parseSections(f.AST)
-	if len(parser.sections) == 0 && errs.Len() == 0 {
-		errs.Pushf(f.Pos, "no sections found")
-		return nil, errs.Err()
-	}
+// Item is a single item in a section.
+// It can be a [LinkItem] or a [TextItem].
+type Item interface {
+	item() // seals the interface
 
-	return &TOC{
-		Sections: parser.sections,
-	}, errs.Err()
+	Pos() pos.Pos
 }
 
-type tocParser struct {
-	src      []byte
-	errs     *pos.ErrorList
-	sections []*Section
-}
-
-func newTOCParser(src []byte, errs *pos.ErrorList) *tocParser {
-	return &tocParser{
-		src:  src,
-		errs: errs,
-	}
-}
-
-func (p *tocParser) parseSections(n *goldast.Any) {
-	for n := n.FirstChild(); n != nil; {
-		sec, next := p.parseSection(n)
-		if sec != nil {
-			p.sections = append(p.sections, sec)
-		}
-		n = next
-	}
-}
-
-// parseSection parses a Section from the given node.
-func (p *tocParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
-	title, n := p.parseSectionTitle(n)
-
-	ls, ok := goldast.Cast[*ast.List](n)
-	if !ok {
-		if title != nil {
-			p.errs.Pushf(n.Pos(), "expected a list, got %v", n.Kind())
-		} else {
-			p.errs.Pushf(n.Pos(), "expected a list or heading, got %v", n.Kind())
-		}
-		return nil, n.NextSibling()
-	}
-
-	items := (&sectionParser{
-		src:  p.src,
-		errs: p.errs,
-	}).parse(ls)
-	return &Section{
-		Title: title,
-		Items: items,
-		AST:   ls,
-	}, n.NextSibling()
-}
-
-func (p *tocParser) parseSectionTitle(n *goldast.Any) (*SectionTitle, *goldast.Any) {
-	h, ok := goldast.Cast[*ast.Heading](n)
-	if !ok {
-		return nil, n
-	}
-
-	return &SectionTitle{
-		Text:  string(h.Node.Text(p.src)),
-		Level: h.Node.Level,
-		AST:   h,
-	}, n.NextSibling()
-}
-
-// sectionParser is a recursive-descent parser for a hierarchy of list items.
-type sectionParser struct {
+// itemTreeParser is a recursive-descent parser for a hierarchy of list items.
+type itemTreeParser struct {
 	src  []byte
 	errs *pos.ErrorList
 
@@ -116,15 +25,15 @@ type sectionParser struct {
 	items tree.List[Item]
 }
 
-func (p *sectionParser) child() *sectionParser {
-	return &sectionParser{
+func (p *itemTreeParser) child() *itemTreeParser {
+	return &itemTreeParser{
 		src:   p.src,
 		errs:  p.errs,
 		depth: p.depth + 1,
 	}
 }
 
-func (p *sectionParser) parse(ls *goldast.List) tree.List[Item] {
+func (p *itemTreeParser) Parse(ls *goldast.List) tree.List[Item] {
 	for ch := ls.FirstChild(); ch != nil; ch = ch.NextSibling() {
 		li, ok := goldast.Cast[*ast.ListItem](ch)
 		if !ok {
@@ -138,7 +47,7 @@ func (p *sectionParser) parse(ls *goldast.List) tree.List[Item] {
 	return p.items
 }
 
-func (p *sectionParser) parseItem(li *goldast.ListItem) {
+func (p *itemTreeParser) parseItem(li *goldast.ListItem) {
 	var (
 		// Node holding the item's link or text.
 		n *goldast.Any
@@ -196,22 +105,9 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 
 	var item Item
 	if link, ok := goldast.Cast[*ast.Link](n); ok {
-		item = &LinkItem{
-			Text:   string(link.Node.Text(p.src)),
-			Target: string(link.Node.Destination),
-			Depth:  p.depth,
-			AST:    link,
-		}
+		item = p.parseLinkItem(link)
 	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
-		if children == nil {
-			p.errs.Pushf(n.Pos(), "text item must have children")
-		}
-
-		item = &TextItem{
-			Text:  string(text.Node.Text(p.src)),
-			Depth: p.depth,
-			AST:   text,
-		}
+		item = p.parseTextItem(text, children != nil)
 	} else {
 		p.errs.Pushf(n.Pos(), "expected a link or text, got %v", n.Kind())
 		return
@@ -219,10 +115,83 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 
 	tnode := tree.Node[Item]{Value: item}
 	if children != nil {
-		tnode.List = p.child().parse(children)
+		tnode.List = p.child().Parse(children)
 	}
 
 	p.items = append(p.items, &tnode)
+}
+
+// LinkItem is a single link item in a table of contents.
+//
+//	[Foo](foo.md)
+type LinkItem struct {
+	// Text of the item.
+	// This is the text inside the "[..]" section of the link.
+	Text string
+
+	// Target is the destination of this item.
+	// This is the text inside the "(..)" section of the link.
+	Target string
+
+	// Depth is the depth of the item in the table of contents.
+	// Depth starts at zero for top-level items.
+	Depth int
+
+	// AST holds the original link node.
+	AST *goldast.Link
+}
+
+func (p *itemTreeParser) parseLinkItem(link *goldast.Link) *LinkItem {
+	return &LinkItem{
+		Text:   string(link.Node.Text(p.src)),
+		Target: string(link.Node.Destination),
+		Depth:  p.depth,
+		AST:    link,
+	}
+}
+
+func (*LinkItem) item() {}
+
+// Pos reports the position in the original TOC
+// where this item was found.
+func (i *LinkItem) Pos() pos.Pos {
+	return i.AST.Pos()
+}
+
+// TextItem is a single text entry in the table of contents.
+//
+//	Foo
+type TextItem struct {
+	// Text of the item.
+	Text string
+
+	// Depth is the depth of the item in the table of contents.
+	// Depth starts at zero for top-level items.
+	Depth int
+
+	// AST holds the original text node.
+	AST *goldast.Text
+}
+
+func (p *itemTreeParser) parseTextItem(text *goldast.Text, hasChildren bool) *TextItem {
+	if !hasChildren {
+		p.errs.Pushf(text.Pos(), "text item must have children")
+		return nil
+	}
+
+	return &TextItem{
+		Text:  string(text.Node.Text(p.src)),
+		Depth: p.depth,
+		AST:   text,
+	}
+}
+
+func (*TextItem) item() {}
+
+// Pos reports the position in the original TOC
+// where this item was found.
+func (i *TextItem) Pos() pos.Pos {
+	return i.AST.Pos()
 }
 
 // combineTextNodes combines adjacent text child nodes of the given node

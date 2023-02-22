@@ -1,4 +1,4 @@
-package summary
+package stitch
 
 import (
 	"os"
@@ -51,14 +51,14 @@ func TestParseSummary(t *testing.T) {
 		}
 	}
 
-	toc := func(secs ...*Section) *TOC {
-		return &TOC{Sections: secs}
+	toc := func(secs ...*Section) *Summary {
+		return &Summary{Sections: secs}
 	}
 
 	tests := []struct {
 		desc string
 		give string
-		want *TOC
+		want *Summary
 	}{
 		{
 			desc: "one",
@@ -155,7 +155,7 @@ func TestParseSummary(t *testing.T) {
 			f, err := goldast.Parse(goldast.DefaultParser(), "", []byte(tt.give))
 			require.NoError(t, err)
 
-			got, err := Parse(f)
+			got, err := ParseSummary(f)
 			require.NoError(t, err)
 
 			// Strip ASTs from the result to make it easier to compare.
@@ -210,7 +210,7 @@ func TestParseSummaryErrors(t *testing.T) {
 				}
 			}()
 
-			_, err = Parse(f)
+			_, err = ParseSummary(f)
 			require.Error(t, err)
 
 			var gotErrors []error
