@@ -8,6 +8,8 @@
 
 ## Introduction
 
+[![CI](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml/badge.svg)](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml)
+
 stitchmd is a tool that stitches together several Markdown files
 into one large Markdown file.
 It aims to make it easier to maintain large, ungainly Markdown files
