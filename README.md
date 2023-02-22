@@ -1,20 +1,29 @@
 # stitchmd
 
-stitchmd is a tool that generates
-large Markdown files from several smaller files.
-It lets you define your desired layout as a table of contents,
-and then it reads and combines all the files together.
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Syntax](#syntax-reference)
 
+## Introduction
+
+stitchmd is a tool that stitches together several Markdown files
+into one large Markdown file.
+It aims to make it easier to maintain large, ungainly Markdown files
+while still reaping the benefits of a single document where appropriate.
+
+With stitchmd, you pass in a Markdown file (the *summary file*)
+that defines a list of references to other Markdown files
+and get back a file with the combined contents of all specified files.
 See [Usage](#usage) for a demonstration.
 
-## Features
+### Features
 
 - **Cross-linking**:
   stitchmd recognizes cross-links between input Markdown files
-  and automatically rewrites them to be local header links
-  in the generated output file.
+  and automatically rewrites them into header links in the generated file.
   This keeps your input files, as well as the output file
-  independently browsable.
+  independently browsable on websites like GitHub.
 - **Header offsetting**:
   stitchmd will adjust heading levels of included Markdown files
   based on the hierarchy you specify in the summary file.
@@ -31,7 +40,7 @@ $ go install go.abhg.dev/stitchmd@latest
 
 ## Usage
 
-To use stitchmd, run it with a Markdown file
+To use stitchmd, pass in with a Markdown file
 defining the layout of your combined file.
 This input file is referred to as the **summary file**,
 and is typically named "summary.md".
@@ -118,7 +127,55 @@ will be roughly in the following shape:
 
 </details>
 
-### Page title
+## Syntax Reference
+
+The **summary file** is the file you pass to stitchmd
+to generate your combined Markdown file.
+
+```bash
+stitchmd summary.md
+```
+
+The summary file is comprised of one or more **sections**.
+Each section lists one or more Markdown files,
+using nested lists to define a hierarchy.
+
+For example:
+
+```markdown
+- [Getting Started](getting-started.md)
+    - [Installation](installation.md)
+- [Usage](usage.md)
+- [API](api.md)
+```
+
+If the summary file defines multiple sections,
+sections may specify **section headings**:
+
+```markdown
+# User Guide
+
+- [Getting Started](getting-started.md)
+    - [Installation](installation.md)
+- [Usage](usage.md)
+- [API](api.md)
+
+# Appendix
+
+- [How things work](implementation.md)
+- [FAQ](faq.md)
+```
+
+If a section has a heading specified,
+headers for files included in that section
+will be offset by the level of that section.
+
+In the example above,
+because "User Guide" is a level 1 header,
+"Getting Started" will be a level 2 header,
+and "Installation" will be a level 3 header.
+
+### Page titles
 
 The page title is determined by the following, in-order:
 
@@ -127,6 +184,4 @@ The page title is determined by the following, in-order:
 - Otherwise, the link text specified in the table of contents
   is the title for that page.
 
-## License
-
-This software is made available under the MIT license.
+<!-- TODO: explain more -->
