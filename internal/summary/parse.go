@@ -2,6 +2,7 @@ package summary
 
 import (
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/pos"
 	"go.abhg.dev/stitchmd/internal/tree"
@@ -138,15 +139,35 @@ func (p *sectionParser) parse(ls *goldast.List) tree.List[Item] {
 }
 
 func (p *sectionParser) parseItem(li *goldast.ListItem) {
-	var hasChildren bool
+	var (
+		// Node holding the item's link or text.
+		n *goldast.Any
+
+		// Children of this node, if any.
+		children *goldast.List
+	)
 	switch count := li.ChildCount(); count {
 	case 0:
 		p.errs.Pushf(li.Pos(), "list item is empty")
 		return
-	case 1:
-		// do nothing
+
 	case 2:
-		hasChildren = true
+		ch, ok := goldast.Cast[*ast.List](li.LastChild())
+		if !ok {
+			p.errs.Pushf(li.LastChild().Pos(), "expected a list, got %v", li.LastChild().Kind())
+			return
+		}
+		children = ch
+		fallthrough
+	case 1:
+		switch ch := li.FirstChild(); ch.Kind() {
+		case ast.KindTextBlock, ast.KindParagraph:
+			n = ch
+		default:
+			p.errs.Pushf(ch.Pos(), "expected text or paragraph, got %v", ch.Kind())
+			return
+		}
+
 	default:
 		childKinds := make([]string, 0, count)
 		for ch := li.FirstChild(); ch != nil; ch = ch.NextSibling() {
@@ -157,25 +178,19 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 		return
 	}
 
-	var n *goldast.Any
-	switch ch := li.FirstChild(); ch.Kind() {
-	case ast.KindTextBlock, ast.KindParagraph:
-		switch count := ch.ChildCount(); count {
-		case 0:
-			p.errs.Pushf(ch.Pos(), "list item is empty")
-			return
-		case 1:
-			n = ch.FirstChild()
-		default:
-			childKinds := make([]string, 0, count)
-			for ch := ch.FirstChild(); ch != nil; ch = ch.NextSibling() {
-				childKinds = append(childKinds, ch.Kind().String())
-			}
-			p.errs.Pushf(ch.Pos(), "text has too many children (%v): %v", count, childKinds)
-			return
-		}
+	combineTextNodes(n.Node)
+	switch count := n.ChildCount(); count {
+	case 0:
+		p.errs.Pushf(n.Pos(), "list item is empty")
+		return
+	case 1:
+		n = n.FirstChild()
 	default:
-		p.errs.Pushf(ch.Pos(), "expected text or paragraph, got %v", ch.Kind())
+		childKinds := make([]string, 0, count)
+		for ch := n.FirstChild(); ch != nil; ch = ch.NextSibling() {
+			childKinds = append(childKinds, ch.Kind().String())
+		}
+		p.errs.Pushf(n.Pos(), "text has too many children (%v): %v", count, childKinds)
 		return
 	}
 
@@ -188,7 +203,7 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 			AST:    link,
 		}
 	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
-		if !hasChildren {
+		if children == nil {
 			p.errs.Pushf(n.Pos(), "text item must have children")
 		}
 
@@ -203,15 +218,42 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 	}
 
 	tnode := tree.Node[Item]{Value: item}
-	if hasChildren {
-		ls, ok := goldast.Cast[*ast.List](li.LastChild())
-		if !ok {
-			p.errs.Pushf(li.LastChild().Pos(), "expected a list, got %v", li.LastChild().Kind())
-			return
-		}
-
-		tnode.List = p.child().parse(ls)
+	if children != nil {
+		tnode.List = p.child().parse(children)
 	}
 
 	p.items = append(p.items, &tnode)
+}
+
+// combineTextNodes combines adjacent text child nodes of the given node
+// into a single text node.
+//
+// This is necessary because sometimes,
+// the parser will split text in a text block into multiple nodes.
+func combineTextNodes(n ast.Node) {
+	// TODO: Maybe this should be a transformer on the Goldmark parser.
+	if n.ChildCount() <= 1 {
+		return
+	}
+
+	var (
+		idx int
+		seg text.Segment
+	)
+	for ch := n.FirstChild(); ch != nil; ch = ch.NextSibling() {
+		if ch.Kind() != ast.KindText {
+			return
+		}
+		if idx == 0 {
+			seg.Start = ch.(*ast.Text).Segment.Start
+		}
+		seg.Stop = ch.(*ast.Text).Segment.Stop
+		idx++
+	}
+
+	newch := ast.NewTextSegment(seg)
+	for n.ChildCount() > 0 {
+		n.RemoveChild(n, n.FirstChild())
+	}
+	n.AppendChild(n, newch)
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/yuin/goldmark"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/tree"
 	"gopkg.in/yaml.v3"
@@ -153,7 +152,7 @@ func TestParseSummary(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := goldast.Parse(goldmark.DefaultParser(), "", []byte(tt.give))
+			f, err := goldast.Parse(goldast.DefaultParser(), "", []byte(tt.give))
 			require.NoError(t, err)
 
 			got, err := Parse(f)
@@ -203,7 +202,7 @@ func TestParseSummaryErrors(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := goldast.Parse(goldmark.DefaultParser(), tt.Filename, []byte(tt.Give))
+			f, err := goldast.Parse(goldast.DefaultParser(), tt.Filename, []byte(tt.Give))
 			require.NoError(t, err)
 			defer func() {
 				if t.Failed() {
