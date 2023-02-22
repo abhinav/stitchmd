@@ -13,11 +13,17 @@ TEST_FLAGS ?= -v
 
 STATICCHECK = bin/staticcheck
 REVIVE = bin/revive
+STITCHMD = bin/stitchmd
 
 # All known Go files.
 GO_FILES = $(shell find . \
 	   -path '*/.*' -prune -o \
 	   '(' -type f -a -name '*.go' ')' -print)
+
+# Non-test Go files.
+GO_SRC_FILES = $(shell find . \
+	   -path '*/.*' -prune -o \
+	   '(' -type f -a -name '*.go' -a -not -name '*_test.go' ')' -print)
 
 # All known go.mod and go.sum files.
 GO_MOD_FILES = \
@@ -29,7 +35,7 @@ GO_MOD_FILES = \
 all: lint test
 
 .PHONY: lint
-lint: fmtcheck tidycheck staticcheck revive
+lint: fmtcheck tidycheck staticcheck readmecheck revive
 
 .PHONY: test
 test:
@@ -44,6 +50,9 @@ cover:
 fmt:
 	gofmt -w -s $(GO_FILES)
 
+.PHONY: readme
+readme: README.md
+
 .PHONY: tidy
 tidy:
 	$(foreach dir,$(MODULES),(cd $(dir) && go mod tidy) &&) true
@@ -53,6 +62,16 @@ fmtcheck:
 	@DIFF=$$(gofmt -d -s $(GO_FILES)); \
 	if [[ -n "$$DIFF" ]]; then \
 		echo "gofmt would cause changes:"; \
+		echo "$$DIFF"; \
+		false; \
+	fi
+
+.PHONY: readmecheck
+readmecheck:
+	make readme
+	@DIFF=$$(git diff README.md); \
+	if [[ -n "$$DIFF" ]]; then \
+		echo "README.md is out of date:"; \
 		echo "$$DIFF"; \
 		false; \
 	fi
@@ -73,6 +92,12 @@ tidycheck:
 		git status --porcelain $(GO_MOD_FILES) && \
 		false; \
 	fi
+
+README.md: $(wildcard doc/*.md) $(STITCHMD)
+	$(STITCHMD) -o README.md doc/README.md
+
+$(STITCHMD): $(GO_SRC_FILES)
+	go build -o $(STITCHMD)
 
 $(STATICCHECK): tools/go.mod
 	cd tools && go install honnef.co/go/tools/cmd/staticcheck
