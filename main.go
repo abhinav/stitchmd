@@ -14,8 +14,6 @@ import (
 	"path/filepath"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/header"
 )
@@ -108,9 +106,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		return fmt.Errorf("read input: %w", err)
 	}
 
-	mdParser := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-	).Parser()
+	mdParser := goldast.DefaultParser()
 
 	f, err := goldast.Parse(mdParser, filename, src)
 	if err != nil {

@@ -1,6 +1,8 @@
 package goldast
 
 import (
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/stitchmd/internal/pos"
@@ -42,4 +44,12 @@ func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOpt
 		Pos:    n.Pos(),
 		Info:   pos.FromContent(filename, src),
 	}, nil
+}
+
+// DefaultParser returns the default Goldmark parser we should use in the
+// application.
+func DefaultParser() parser.Parser {
+	return goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+	).Parser()
 }
