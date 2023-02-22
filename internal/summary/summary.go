@@ -5,8 +5,8 @@
 package summary
 
 import (
-	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/tree"
+	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/tree"
 )
 
 // TOC is the complete summary document.

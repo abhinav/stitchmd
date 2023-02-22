@@ -2,9 +2,9 @@ package summary
 
 import (
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/pos"
-	"go.abhg.dev/mdreduce/internal/tree"
+	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/pos"
+	"go.abhg.dev/stitchmd/internal/tree"
 )
 
 // Parse parses a summary from a Markdown document.

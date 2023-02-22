@@ -1,4 +1,4 @@
-// mdreduce reads a Markdown file defining a table of contents
+// stitchmd reads a Markdown file defining a table of contents
 // with links to other Markdown files,
 // and reduces it all to a single Markdown file.
 //
@@ -16,8 +16,8 @@ import (
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
-	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/header"
+	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/header"
 )
 
 var _version = "dev"
@@ -59,7 +59,7 @@ func (cmd *mainCmd) Run(args []string) (exitCode int) {
 	}
 
 	if err := cmd.run(opts); err != nil {
-		fmt.Fprintln(cmd.Stderr, "mdreduce:", err)
+		fmt.Fprintln(cmd.Stderr, "stitchmd:", err)
 		return 1
 	}
 

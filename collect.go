@@ -6,11 +6,11 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
-	"go.abhg.dev/mdreduce/internal/goldast"
-	"go.abhg.dev/mdreduce/internal/header"
-	"go.abhg.dev/mdreduce/internal/pos"
-	"go.abhg.dev/mdreduce/internal/summary"
-	"go.abhg.dev/mdreduce/internal/tree"
+	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/header"
+	"go.abhg.dev/stitchmd/internal/pos"
+	"go.abhg.dev/stitchmd/internal/summary"
+	"go.abhg.dev/stitchmd/internal/tree"
 )
 
 // collector loads all Markdown files in a TOC

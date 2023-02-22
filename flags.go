@@ -32,7 +32,7 @@ type cliParser struct {
 }
 
 func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
-	flag := flag.NewFlagSet("mdreduce", flag.ContinueOnError)
+	flag := flag.NewFlagSet("stitchmd", flag.ContinueOnError)
 	flag.SetOutput(p.Stderr)
 	flag.Usage = func() {
 		fmt.Fprint(p.Stderr, _shortHelp)

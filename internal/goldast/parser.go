@@ -3,7 +3,7 @@ package goldast
 import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
-	"go.abhg.dev/mdreduce/internal/pos"
+	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 // File is a parsed Markdown file.

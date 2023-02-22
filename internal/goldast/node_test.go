@@ -8,7 +8,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
-	"go.abhg.dev/mdreduce/internal/pos"
+	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 func TestWrap(t *testing.T) {

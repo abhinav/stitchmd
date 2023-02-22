@@ -9,7 +9,7 @@ import (
 	"reflect"
 
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/mdreduce/internal/pos"
+	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 // Node decorates a Goldmark Node with position information.
