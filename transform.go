@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/mdreduce/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/goldast"
 )
 
 type transformer struct {

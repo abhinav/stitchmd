@@ -1,4 +1,4 @@
-module go.abhg.dev/mdreduce
+module go.abhg.dev/stitchmd
 
 go 1.20
 

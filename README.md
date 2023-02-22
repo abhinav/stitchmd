@@ -1,6 +1,6 @@
-# mdreduce
+# stitchmd
 
-mdreduce is a tool that generates
+stitchmd is a tool that generates
 large Markdown files from several smaller files.
 It lets you define your desired layout as a table of contents,
 and then it reads and combines all the files together.
@@ -10,34 +10,34 @@ See [Usage](#usage) for a demonstration.
 ## Features
 
 - **Cross-linking**:
-  mdreduce recognizes cross-links between input Markdown files
+  stitchmd recognizes cross-links between input Markdown files
   and automatically rewrites them to be local header links
   in the generated output file.
   This keeps your input files, as well as the output file
   independently browsable.
 - **Header offsetting**:
-  mdreduce will adjust heading levels of included Markdown files
+  stitchmd will adjust heading levels of included Markdown files
   based on the hierarchy you specify in the summary file.
 
 ## Installation
 
-Install mdreduce from source with the following command:
+Install stitchmd from source with the following command:
 
 ```bash
-$ go install go.abhg.dev/mdreduce@latest
+$ go install go.abhg.dev/stitchmd@latest
 ```
 
 <!-- TODO: binary installation once goreleaser is set up. -->
 
 ## Usage
 
-To use mdreduce, run it with a Markdown file
+To use stitchmd, run it with a Markdown file
 defining the layout of your combined file.
 This input file is referred to as the **summary file**,
 and is typically named "summary.md".
 
 ```bash
-mdreduce summary.md
+stitchmd summary.md
 ```
 
 The table of contents in the summary file is a list of one or more **sections**,
@@ -69,7 +69,7 @@ Some things to note about the input format:
 
 <!-- TODO: document syntax explicitly in a separate section. -->
 
-The output of mdreduce will be a single Markdown file with the
+The output of stitchmd will be a single Markdown file with the
 contents of all the listed files inline,
 with their links rewritten to match their new location.
 

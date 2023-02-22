@@ -1,4 +1,4 @@
-USAGE: mdreduce [OPTIONS] FILE
+USAGE: stitchmd [OPTIONS] FILE
 
 Reads a hierarchy of sections from FILE and generates a Markdown file
 with the contents of all linked files combined.
