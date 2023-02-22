@@ -4,3 +4,4 @@
 - [Installation](install.md)
 - [Usage](usage.md)
 - [Syntax](syntax.md)
+- [License](license.md)

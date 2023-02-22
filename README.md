@@ -4,6 +4,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Syntax](#syntax-reference)
+- [License](#license)
 
 ## Introduction
 
@@ -185,3 +186,7 @@ The page title is determined by the following, in-order:
   is the title for that page.
 
 <!-- TODO: explain more -->
+
+## License
+
+This software is licensed under the MIT license.
