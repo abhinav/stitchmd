@@ -70,5 +70,11 @@ func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 }
 
 func (g *generator) renderFileItem(file *markdownFileItem) error {
+	if t := file.TOCTitle; t != nil {
+		if err := g.Renderer.Render(g.W, file.File.Source, t.AST.Node); err != nil {
+			return err
+		}
+		io.WriteString(g.W, "\n\n")
+	}
 	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
 }

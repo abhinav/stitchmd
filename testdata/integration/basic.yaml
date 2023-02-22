@@ -230,3 +230,149 @@
     ### How to do a thing?
 
     To do a thing, start by doing it.
+
+- name: no titles
+  give: |
+    - [Foo](foo.md)
+    - [Bar](bar.md)
+  files:
+    foo.md: "foo does stuff"
+    bar.md: "bar does other stuff"
+  want: |
+    - [Foo](#foo)
+    - [Bar](#bar)
+
+    # Foo
+
+    foo does stuff
+
+    # Bar
+
+    bar does other stuff
+
+- name: multiple h1s
+  give: |
+    - [Introduction](intro.md)
+    - Guide
+      - [Concepts](concepts.md)
+  files:
+    intro.md: |
+      # Getting Started
+
+      Foo
+
+      # Installation
+
+      Bar
+    concepts.md: |
+      # Concept Foo
+
+      Foo
+
+      # Concept Bar
+
+      Bar
+  want: |
+    - [Introduction](#introduction)
+    - [Guide](#guide)
+      - [Concepts](#concepts)
+
+    # Introduction
+
+    ## Getting Started
+
+    Foo
+
+    ## Installation
+
+    Bar
+
+    # Guide
+
+    ## Concepts
+
+    ### Concept Foo
+
+    Foo
+
+    ### Concept Bar
+
+    Bar
+
+- name: no h1s
+  give: |
+    - [Foo](foo.md)
+    - [Bar](bar.md)
+  files:
+    foo.md: |
+      ## A
+
+      ## B
+
+      ## C
+    bar.md: |
+      ## D
+
+      ## E
+
+      ## F
+  want: |
+    - [Foo](#foo)
+    - [Bar](#bar)
+
+    # Foo
+
+    ## A
+
+    ## B
+
+    ## C
+
+    # Bar
+
+    ## D
+
+    ## E
+
+    ## F
+
+- name: no h1s with section title
+  give: |
+    ## Items
+
+    - [Foo](foo.md)
+    - [Bar](bar.md)
+  files:
+    foo.md: |
+      ## A
+
+      ## B
+
+      ## C
+    bar.md: |
+      ## D
+
+      ## E
+
+      ## F
+  want: |
+    ## Items
+
+    - [Foo](#foo)
+    - [Bar](#bar)
+
+    ### Foo
+
+    #### A
+
+    #### B
+
+    #### C
+
+    ### Bar
+
+    #### D
+
+    #### E
+
+    #### F
