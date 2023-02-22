@@ -69,7 +69,7 @@ func (c *collector) collectSection(errs *pos.ErrorList, sec *summary.Section) *m
 	items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {
 		i, err := c.collectItem(item)
 		if err != nil {
-			errs.Pushf(item.ASTNode().Pos(), "%v", err)
+			errs.Pushf(item.Pos(), "%v", err)
 			return nil
 		}
 		return i
