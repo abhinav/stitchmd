@@ -1,0 +1,62 @@
+project_name: stitchmd
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: ["386", amd64, arm, arm64]
+    goarm: [5, 6, 7]
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: darwin
+        goarch: arm
+    ldflags: '-s -w -X main._version={{.Version}}'
+    flags:
+      - -trimpath
+
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+
+aurs:
+  - name: stitchmd-bin
+    homepage: https://github.com/abhinav/stitchmd
+    description: "Stitch multiple Markdown files together into a single document."
+    maintainers:
+      - 'Abhinav Gupta <mail@abhinavg.net>'
+    license: "MIT"
+    git_url: "ssh://aur@aur.archlinux.org/stitchmd-bin.git"
+    skip_upload: auto
+    private_key: '{{ .Env.AUR_KEY }}'
+    package: |-
+      install -Dm755 "./stitchmd" "${pkgdir}/usr/bin/stitchmd"
+      install -Dm755 "./LICENSE" "${pkgdir}/usr/share/licenses/stitchmd/LICENSE"
+    commit_author:
+      name: Abhinav Gupta
+      email: mail@abhinavg.net
+
+brews:
+  - tap:
+      owner: abhinav
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_msg_template: "{{ .ProjectName }}: Update formula to {{ .Tag }}"
+    commit_author:
+      name: Abhinav Gupta
+      email: mail@abhinavg.net
+    homepage: https://github.com/abhinav/stitchmd
+    description: "Stitch multiple Markdown files together into a single document."
+    license: "MIT"
+    skip_upload: auto
+    test: |
+      system "#{bin}/stitchmd -version"
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incminor .Tag }}-dev"
+
+changelog:
+  # A commit log is not a changelog.
+  skip: true
