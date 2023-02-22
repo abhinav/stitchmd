@@ -6,6 +6,7 @@ package summary
 
 import (
 	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/pos"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
 
@@ -30,15 +31,6 @@ type Section struct {
 	AST *goldast.List
 }
 
-// TitleLevel reports the level of the title for this section.
-// It returns zero if there is no title.
-func (s *Section) TitleLevel() int {
-	if s.Title == nil {
-		return 0
-	}
-	return s.Title.Level
-}
-
 // SectionTitle holds information about a section title.
 type SectionTitle struct {
 	// Text of the title.
@@ -56,12 +48,7 @@ type SectionTitle struct {
 type Item interface {
 	item() // seals the interface
 
-	// Reports the depth of the item in the tree,
-	// with zero being the top-level items.
-	ItemDepth() int
-
-	// ASTNode returns the AST node that this item was built from.
-	ASTNode() *goldast.Any
+	Pos() pos.Pos
 }
 
 // LinkItem is a single link item in a table of contents.
@@ -86,14 +73,10 @@ type LinkItem struct {
 
 func (*LinkItem) item() {}
 
-// ItemDepth reports the depth of the LinkItem in the tree.
-func (i *LinkItem) ItemDepth() int {
-	return i.Depth
-}
-
-// ASTNode returns the Link node that this item was built from.
-func (i *LinkItem) ASTNode() *goldast.Any {
-	return i.AST.AsAny()
+// Pos reports the position in the original TOC
+// where this item was found.
+func (i *LinkItem) Pos() pos.Pos {
+	return i.AST.Pos()
 }
 
 // TextItem is a single text entry in the table of contents.
@@ -113,12 +96,8 @@ type TextItem struct {
 
 func (*TextItem) item() {}
 
-// ItemDepth reports the depth of the TextItem in the tree.
-func (i *TextItem) ItemDepth() int {
-	return i.Depth
-}
-
-// ASTNode returns the Text node that this item was built from.
-func (i *TextItem) ASTNode() *goldast.Any {
-	return i.AST.AsAny()
+// Pos reports the position in the original TOC
+// where this item was found.
+func (i *TextItem) Pos() pos.Pos {
+	return i.AST.Pos()
 }
