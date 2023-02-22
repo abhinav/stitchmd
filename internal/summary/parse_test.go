@@ -119,19 +119,31 @@ func TestParseSummary(t *testing.T) {
 			),
 		},
 		{
-			desc: "items withouth links",
+			desc: "item groups",
 			give: unlines(
 				"- foo",
-				"- bar",
+				"    - [bar](bar.md)",
 				"    - [baz](baz.md)",
-				"- baz",
 			),
 			want: toc(
 				section(0, "",
-					textItem(0, "foo"),
-					textItem(0, "bar",
-						linkItem(1, "baz", "baz.md")),
-					textItem(0, "baz")),
+					textItem(0, "foo",
+						linkItem(1, "bar", "bar.md"),
+						linkItem(1, "baz", "baz.md"))),
+			),
+		},
+		{
+			desc: "longer group names",
+			give: unlines(
+				"- foo bar baz qux quux.",
+				"    - [bar](bar.md)",
+				"    - [baz](baz.md)",
+			),
+			want: toc(
+				section(0, "",
+					textItem(0, "foo bar baz qux quux.",
+						linkItem(1, "bar", "bar.md"),
+						linkItem(1, "baz", "baz.md"))),
 			),
 		},
 	}

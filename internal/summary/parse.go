@@ -148,7 +148,12 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 	case 2:
 		hasChildren = true
 	default:
-		p.errs.Pushf(li.FirstChild().Pos(), "item has too many children (%v)", count)
+		childKinds := make([]string, 0, count)
+		for ch := li.FirstChild(); ch != nil; ch = ch.NextSibling() {
+			childKinds = append(childKinds, ch.Kind().String())
+		}
+
+		p.errs.Pushf(li.FirstChild().Pos(), "list item has too many children (%v): %v", count, childKinds)
 		return
 	}
 
@@ -162,7 +167,11 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 		case 1:
 			n = ch.FirstChild()
 		default:
-			p.errs.Pushf(ch.Pos(), "item has too many children (%v)", count)
+			childKinds := make([]string, 0, count)
+			for ch := ch.FirstChild(); ch != nil; ch = ch.NextSibling() {
+				childKinds = append(childKinds, ch.Kind().String())
+			}
+			p.errs.Pushf(ch.Pos(), "text has too many children (%v): %v", count, childKinds)
 			return
 		}
 	default:
@@ -179,6 +188,10 @@ func (p *sectionParser) parseItem(li *goldast.ListItem) {
 			AST:    link,
 		}
 	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
+		if !hasChildren {
+			p.errs.Pushf(n.Pos(), "text item must have children")
+		}
+
 		item = &TextItem{
 			Text:  string(text.Node.Text(p.src)),
 			Depth: p.depth,
