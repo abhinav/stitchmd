@@ -11,17 +11,18 @@ import (
 )
 
 type transformer struct {
-	Files map[string]*markdownFileItem // path => file
-	Log   *log.Logger
+	Log *log.Logger
 
 	// Level of the current section's header, if any.
 	sectionLevel int
 
-	tocFile *goldast.File
+	filesByPath map[string]*markdownFileItem
+	tocFile     *goldast.File
 }
 
 func (t *transformer) Transform(coll *markdownCollection) {
 	t.tocFile = coll.TOCFile
+	t.filesByPath = coll.FilesByPath
 	for _, sec := range coll.Sections {
 		t.sectionLevel = sec.TitleLevel()
 		sec.Items.Walk(func(item markdownItem) error {
@@ -84,14 +85,23 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 	}
 
 	dst := filepath.Join(from, u.Path)
-	to, ok := t.Files[dst]
+	to, ok := t.filesByPath[dst]
 	if !ok {
 		return fmt.Errorf("link to unknown file: %v", dst)
 	}
 
-	if u.Fragment == "" && to.Title != nil {
-		link.Node.Destination = []byte("#" + to.Title.ID)
+	u.Path = ""
+	if u.Fragment != "" {
+		// If the fragment of a link to another Markdown file
+		// is a known heading in that Markdown file,
+		// use the new ID of that header.
+		if h, ok := to.HeadingsByOldID[u.Fragment]; ok {
+			u.Fragment = h.ID
+		}
+	} else if to.Title != nil {
+		u.Fragment = to.Title.ID
 	}
+	link.Node.Destination = []byte(u.String())
 
 	return nil
 }
