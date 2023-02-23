@@ -9,7 +9,7 @@ import (
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/header"
 	"go.abhg.dev/stitchmd/internal/pos"
-	"go.abhg.dev/stitchmd/internal/summary"
+	"go.abhg.dev/stitchmd/internal/stitch"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
 
@@ -34,7 +34,7 @@ type markdownCollection struct {
 func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
 	c.files = make(map[string]*markdownFileItem)
 
-	toc, err := summary.Parse(f)
+	toc, err := stitch.ParseSummary(f)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (s *markdownSection) TitleLevel() int {
 	return 0
 }
 
-func (c *collector) collectSection(errs *pos.ErrorList, sec *summary.Section) *markdownSection {
-	items := tree.TransformList(sec.Items, func(item summary.Item) markdownItem {
+func (c *collector) collectSection(errs *pos.ErrorList, sec *stitch.Section) *markdownSection {
+	items := tree.TransformList(sec.Items, func(item stitch.Item) markdownItem {
 		i, err := c.collectItem(item)
 		if err != nil {
 			errs.Pushf(item.Pos(), "%v", err)
@@ -95,12 +95,12 @@ type markdownItem interface {
 	markdownItem()
 }
 
-func (c *collector) collectItem(item summary.Item) (markdownItem, error) {
+func (c *collector) collectItem(item stitch.Item) (markdownItem, error) {
 	switch item := item.(type) {
-	case *summary.LinkItem:
+	case *stitch.LinkItem:
 		return c.collectFileItem(item)
 
-	case *summary.TextItem:
+	case *stitch.TextItem:
 		return c.collectGroupItem(item), nil
 
 	default:
@@ -141,7 +141,7 @@ type markdownFileItem struct {
 
 func (*markdownFileItem) markdownItem() {}
 
-func (c *collector) collectFileItem(item *summary.LinkItem) (*markdownFileItem, error) {
+func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, error) {
 	src, err := fs.ReadFile(c.FS, item.Target)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ type markdownGroupItem struct {
 
 func (*markdownGroupItem) markdownItem() {}
 
-func (c *collector) collectGroupItem(item *summary.TextItem) *markdownGroupItem {
+func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 	h := ast.NewHeading(1) // will be transformed
 	h.AppendChild(h, ast.NewString([]byte(item.Text)))
 
