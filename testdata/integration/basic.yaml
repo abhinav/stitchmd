@@ -376,3 +376,40 @@
     #### E
 
     #### F
+
+- name: h1 is not first item
+  give: |
+    - [Foo](foo.md)
+    - [Bar](bar.md)
+  files:
+    foo.md: |
+      Foo is a thing.
+
+      # Details
+
+      Here are some details.
+    bar.md: |
+      Bar is another thing.
+
+      # Details
+
+      Here are some more details.
+  want: |
+    - [Foo](#foo)
+    - [Bar](#bar)
+
+    # Foo
+
+    Foo is a thing.
+
+    ## Details
+
+    Here are some details.
+
+    # Bar
+
+    Bar is another thing.
+
+    ## Details
+
+    Here are some more details.
