@@ -187,7 +187,11 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		Headings:        headings,
 		HeadingsByOldID: headingsByOldID,
 	}
-	if len(h1s) == 1 {
+
+	// If the page has only one level 1 heading,
+	// and it's the first element in the page,
+	// then use it as the title.
+	if len(h1s) == 1 && h1s[0].AST.PreviousSibling() == nil {
 		mf.Title = h1s[0]
 	} else {
 		heading := ast.NewHeading(1)
