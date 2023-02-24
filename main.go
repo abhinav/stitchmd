@@ -36,13 +36,9 @@ type mainCmd struct {
 	Stderr io.Writer // == os.Stderr
 
 	Getwd func() (string, error) // == os.Getwd
-
-	log *log.Logger
 }
 
 func (cmd *mainCmd) Run(args []string) (exitCode int) {
-	cmd.log = log.New(cmd.Stderr, "", 0)
-
 	opts, res := (&cliParser{
 		Stdout: cmd.Stdout,
 		Stderr: cmd.Stderr,
@@ -65,6 +61,8 @@ func (cmd *mainCmd) Run(args []string) (exitCode int) {
 }
 
 func (cmd *mainCmd) run(opts *params) error {
+	log := log.New(cmd.Stderr, "", 0)
+
 	input := cmd.Stdin
 	filename := "<stdin>"
 	if len(opts.Input) > 0 {
@@ -119,12 +117,12 @@ func (cmd *mainCmd) run(opts *params) error {
 		IDGen:  header.NewIDGen(),
 	}).Collect(f)
 	if err != nil {
-		cmd.log.Println(err)
+		log.Println(err)
 		return errors.New("error reading markdown")
 	}
 
 	(&transformer{
-		Log: cmd.log,
+		Log: log,
 	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()
@@ -135,7 +133,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	g := &generator{
 		W:        output,
 		Renderer: render,
-		Log:      cmd.log,
+		Log:      log,
 	}
 	return g.Generate(coll)
 }
