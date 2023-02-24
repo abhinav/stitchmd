@@ -125,6 +125,9 @@ type markdownFileItem struct {
 	// Links holds all links that were found in the Markdown file.
 	Links []*ast.Link
 
+	// Images holds all images that were found in the Markdown file.
+	Images []*ast.Image
+
 	// Headings holds all headings that were found in the Markdown file.
 	Headings []*markdownHeading
 
@@ -146,6 +149,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 
 	var (
 		links    []*ast.Link
+		images   []*ast.Image
 		headings []*markdownHeading
 		h1s      []*markdownHeading
 	)
@@ -154,6 +158,8 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		switch n := n.(type) {
 		case *ast.Link:
 			links = append(links, n)
+		case *ast.Image:
+			images = append(images, n)
 		case *ast.Heading:
 			mh := c.newHeading(f, fidgen, n)
 			headings = append(headings, mh)
@@ -173,6 +179,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		Item:            item,
 		File:            f,
 		Links:           links,
+		Images:          images,
 		Headings:        headings,
 		HeadingsByOldID: headingsByOldID,
 	}

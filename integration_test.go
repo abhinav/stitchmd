@@ -21,6 +21,10 @@ func TestIntegration(t *testing.T) {
 		Give  string            `yaml:"give"`
 		Files map[string]string `yaml:"files"`
 		Want  string            `yaml:"want"`
+
+		// Path to the output directory,
+		// relative to the test directory.
+		OutDir string `yaml:"outDir"`
 	}
 
 	testfiles, err := filepath.Glob("testdata/integration/*.yaml")
@@ -50,29 +54,42 @@ func TestIntegration(t *testing.T) {
 
 			dir := t.TempDir()
 
+			input := filepath.Join(dir, "summary.md")
+			require.NoError(t, os.WriteFile(input, []byte(tt.Give), 0o644))
+
+			output := filepath.Join(dir, "output.md")
+			if tt.OutDir != "" {
+				require.NoError(t, os.MkdirAll(filepath.Join(dir, tt.OutDir), 0o755))
+				output = filepath.Join(dir, tt.OutDir, "output.md")
+			}
+
 			for filename, content := range tt.Files {
 				path := filepath.Join(dir, filename)
 				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 				require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 			}
 
-			var got, stderr bytes.Buffer
+			var stdout, stderr bytes.Buffer
 			cmd := mainCmd{
-				Stdin:  strings.NewReader(tt.Give),
-				Stdout: &got,
+				Stdin:  new(bytes.Buffer),
+				Stdout: &stdout,
 				Stderr: &stderr,
 				Getwd: func() (string, error) {
-					t.Errorf("did not expect Getwd to be called")
 					return dir, nil
 				},
 			}
 
 			require.NoError(t, cmd.run(&params{
-				Dir: dir,
+				Input:  input,
+				Output: output,
 			}))
 
-			assert.Equal(t, tt.Want, got.String())
+			got, err := os.ReadFile(output)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.Want, string(got))
 			assert.Empty(t, stderr.String(), "stderr")
+			assert.Empty(t, stdout.String(), "stdout")
 		})
 	}
 }
