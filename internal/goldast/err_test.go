@@ -6,16 +6,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 func TestErrorList(t *testing.T) {
-	info := fakeInfo(func(offset int) pos.Position {
+	info := fakeInfo(func(offset int) Position {
 		switch offset {
 		case 42:
-			return pos.Position{File: "foo", Line: 42, Column: 13}
+			return Position{File: "foo", Line: 42, Column: 13}
 		case 13:
-			return pos.Position{File: "foo", Line: 13, Column: 42}
+			return Position{File: "foo", Line: 13, Column: 42}
 		default:
 			t.Errorf("unexpected offset %v", offset)
 			panic("unexpected offset")
@@ -55,9 +54,9 @@ func TestErrorList(t *testing.T) {
 	assert.ErrorIs(t, err, bar)
 }
 
-type fakeInfo func(int) pos.Position
+type fakeInfo func(int) Position
 
-func (f fakeInfo) Position(offset int) pos.Position {
+func (f fakeInfo) Position(offset int) Position {
 	return f(offset)
 }
 

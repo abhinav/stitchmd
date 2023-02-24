@@ -1,3 +1,7 @@
+// Package goldast provides utilities for working with Goldmark ASTs.
+//
+// It provides a position tracking mechanism via the [Info] and [Position]
+// types, so that we can report errors with line and column numbers.
 package goldast
 
 import (
@@ -6,7 +10,6 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
-	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 // File is a parsed Markdown file.
@@ -18,12 +21,12 @@ type File struct {
 	Source []byte
 
 	// Info holds position information about the file.
-	Info *pos.Info
+	Info *Info
 }
 
 // Position turns the given Pos into a Position
 // using this file's position information.
-func (f *File) Position(offset int) pos.Position {
+func (f *File) Position(offset int) Position {
 	return f.Info.Position(offset)
 }
 
@@ -34,7 +37,7 @@ func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOpt
 	return &File{
 		AST:    n,
 		Source: src,
-		Info:   pos.FromContent(filename, src),
+		Info:   infoFromContent(filename, src),
 	}
 }
 

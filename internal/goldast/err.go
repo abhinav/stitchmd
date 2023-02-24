@@ -6,14 +6,13 @@ import (
 	"sort"
 
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/stitchmd/internal/pos"
 )
 
 // ErrorList tracks errors associated with positions of ast.Nodes in a
 // document.
 type ErrorList struct {
 	info interface {
-		Position(int) pos.Position
+		Position(int) Position
 	}
 	errs []*posError
 
@@ -24,12 +23,12 @@ type ErrorList struct {
 
 // NewErrorList builds an ErrorList
 // that uses the provided [pos.Info] to report positions.
-func NewErrorList(info *pos.Info) *ErrorList {
+func NewErrorList(info *Info) *ErrorList {
 	return newErrorList(info, OffsetOf)
 }
 
 func newErrorList(
-	info interface{ Position(int) pos.Position },
+	info interface{ Position(int) Position },
 	offsetOf func(ast.Node) int,
 ) *ErrorList {
 	return &ErrorList{info: info, offsetOf: offsetOf}
