@@ -13,7 +13,7 @@ import (
 type Item interface {
 	item() // seals the interface
 
-	Pos() pos.Pos
+	Offset() int
 }
 
 // itemTreeParser is a recursive-descent parser for a hierarchy of list items.
@@ -33,13 +33,13 @@ func (p *itemTreeParser) child() *itemTreeParser {
 	}
 }
 
-func (p *itemTreeParser) Parse(ls *goldast.List) tree.List[Item] {
+func (p *itemTreeParser) Parse(ls *ast.List) tree.List[Item] {
 	for ch := ls.FirstChild(); ch != nil; ch = ch.NextSibling() {
-		li, ok := goldast.Cast[*ast.ListItem](ch)
+		li, ok := ch.(*ast.ListItem)
 		if !ok {
 			// Impossible for parsed ASTs.
 			// Only hand-crafted ASTs could trigger this.
-			p.errs.Pushf(ch.Pos(), "expected a list item, got %v", ch.Kind())
+			p.errs.Pushf(goldast.OffsetOf(ch), "expected a list item, got %v", ch.Kind())
 			continue
 		}
 		p.parseItem(li)
@@ -47,23 +47,23 @@ func (p *itemTreeParser) Parse(ls *goldast.List) tree.List[Item] {
 	return p.items
 }
 
-func (p *itemTreeParser) parseItem(li *goldast.ListItem) {
+func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 	var (
 		// Node holding the item's link or text.
-		n *goldast.Any
+		n ast.Node
 
 		// Children of this node, if any.
-		children *goldast.List
+		children *ast.List
 	)
 	switch count := li.ChildCount(); count {
 	case 0:
-		p.errs.Pushf(li.Pos(), "list item is empty")
+		p.errs.Pushf(goldast.OffsetOf(li), "list item is empty")
 		return
 
 	case 2:
-		ch, ok := goldast.Cast[*ast.List](li.LastChild())
+		ch, ok := li.LastChild().(*ast.List)
 		if !ok {
-			p.errs.Pushf(li.LastChild().Pos(), "expected a list, got %v", li.LastChild().Kind())
+			p.errs.Pushf(goldast.OffsetOf(li.LastChild()), "expected a list, got %v", li.LastChild().Kind())
 			return
 		}
 		children = ch
@@ -73,7 +73,7 @@ func (p *itemTreeParser) parseItem(li *goldast.ListItem) {
 		case ast.KindTextBlock, ast.KindParagraph:
 			n = ch
 		default:
-			p.errs.Pushf(ch.Pos(), "expected text or paragraph, got %v", ch.Kind())
+			p.errs.Pushf(goldast.OffsetOf(ch), "expected text or paragraph, got %v", ch.Kind())
 			return
 		}
 
@@ -83,14 +83,14 @@ func (p *itemTreeParser) parseItem(li *goldast.ListItem) {
 			childKinds = append(childKinds, ch.Kind().String())
 		}
 
-		p.errs.Pushf(li.FirstChild().Pos(), "list item has too many children (%v): %v", count, childKinds)
+		p.errs.Pushf(goldast.OffsetOf(li.FirstChild()), "list item has too many children (%v): %v", count, childKinds)
 		return
 	}
 
-	combineTextNodes(n.Node)
+	combineTextNodes(n)
 	switch count := n.ChildCount(); count {
 	case 0:
-		p.errs.Pushf(n.Pos(), "list item is empty")
+		p.errs.Pushf(goldast.OffsetOf(n), "list item is empty")
 		return
 	case 1:
 		n = n.FirstChild()
@@ -99,17 +99,18 @@ func (p *itemTreeParser) parseItem(li *goldast.ListItem) {
 		for ch := n.FirstChild(); ch != nil; ch = ch.NextSibling() {
 			childKinds = append(childKinds, ch.Kind().String())
 		}
-		p.errs.Pushf(n.Pos(), "text has too many children (%v): %v", count, childKinds)
+		p.errs.Pushf(goldast.OffsetOf(n), "text has too many children (%v): %v", count, childKinds)
 		return
 	}
 
 	var item Item
-	if link, ok := goldast.Cast[*ast.Link](n); ok {
-		item = p.parseLinkItem(link)
-	} else if text, ok := goldast.Cast[*ast.Text](n); ok {
-		item = p.parseTextItem(text, children != nil)
-	} else {
-		p.errs.Pushf(n.Pos(), "expected a link or text, got %v", n.Kind())
+	switch n := n.(type) {
+	case *ast.Link:
+		item = p.parseLinkItem(n)
+	case *ast.Text:
+		item = p.parseTextItem(n, children != nil)
+	default:
+		p.errs.Pushf(goldast.OffsetOf(n), "expected a link or text, got %v", n.Kind())
 		return
 	}
 
@@ -138,13 +139,13 @@ type LinkItem struct {
 	Depth int
 
 	// AST holds the original link node.
-	AST *goldast.Link
+	AST *ast.Link
 }
 
-func (p *itemTreeParser) parseLinkItem(link *goldast.Link) *LinkItem {
+func (p *itemTreeParser) parseLinkItem(link *ast.Link) *LinkItem {
 	return &LinkItem{
-		Text:   string(link.Node.Text(p.src)),
-		Target: string(link.Node.Destination),
+		Text:   string(link.Text(p.src)),
+		Target: string(link.Destination),
 		Depth:  p.depth,
 		AST:    link,
 	}
@@ -152,10 +153,10 @@ func (p *itemTreeParser) parseLinkItem(link *goldast.Link) *LinkItem {
 
 func (*LinkItem) item() {}
 
-// Pos reports the position in the original TOC
-// where this item was found.
-func (i *LinkItem) Pos() pos.Pos {
-	return i.AST.Pos()
+// Offset returns the offset in the summary document
+// at which the link item appears.
+func (i *LinkItem) Offset() int {
+	return goldast.OffsetOf(i.AST)
 }
 
 // TextItem is a single text entry in the table of contents.
@@ -170,17 +171,17 @@ type TextItem struct {
 	Depth int
 
 	// AST holds the original text node.
-	AST *goldast.Text
+	AST *ast.Text
 }
 
-func (p *itemTreeParser) parseTextItem(text *goldast.Text, hasChildren bool) *TextItem {
+func (p *itemTreeParser) parseTextItem(text *ast.Text, hasChildren bool) *TextItem {
 	if !hasChildren {
-		p.errs.Pushf(text.Pos(), "text item must have children")
+		p.errs.Pushf(goldast.OffsetOf(text), "text item must have children")
 		return nil
 	}
 
 	return &TextItem{
-		Text:  string(text.Node.Text(p.src)),
+		Text:  string(text.Text(p.src)),
 		Depth: p.depth,
 		AST:   text,
 	}
@@ -188,10 +189,10 @@ func (p *itemTreeParser) parseTextItem(text *goldast.Text, hasChildren bool) *Te
 
 func (*TextItem) item() {}
 
-// Pos reports the position in the original TOC
-// where this item was found.
-func (i *TextItem) Pos() pos.Pos {
-	return i.AST.Pos()
+// Offset returns the offset in the summary document
+// at which the text item appears.
+func (i *TextItem) Offset() int {
+	return goldast.OffsetOf(i.AST)
 }
 
 // combineTextNodes combines adjacent text child nodes of the given node

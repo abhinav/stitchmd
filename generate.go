@@ -30,12 +30,12 @@ func (g *generator) Generate(coll *markdownCollection) error {
 
 func (g *generator) renderSection(src []byte, sec *markdownSection) error {
 	if t := sec.Title; t != nil {
-		if err := g.Renderer.Render(g.W, src, t.Node); err != nil {
+		if err := g.Renderer.Render(g.W, src, t); err != nil {
 			return err
 		}
 	}
 
-	if err := g.Renderer.Render(g.W, src, sec.TOCItems.Node); err != nil {
+	if err := g.Renderer.Render(g.W, src, sec.TOCItems); err != nil {
 		return err
 	}
 	io.WriteString(g.W, "\n\n")
@@ -61,7 +61,7 @@ func (g *generator) renderItem(item markdownItem) error {
 }
 
 func (g *generator) renderGroupItem(group *markdownGroupItem) error {
-	if err := g.Renderer.Render(g.W, nil, group.Heading.AST.Node); err != nil {
+	if err := g.Renderer.Render(g.W, nil, group.Heading.AST); err != nil {
 		return err
 	}
 	io.WriteString(g.W, "\n")
@@ -69,5 +69,5 @@ func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 }
 
 func (g *generator) renderFileItem(file *markdownFileItem) error {
-	return g.Renderer.Render(g.W, file.File.Source, file.File.AST.Node)
+	return g.Renderer.Render(g.W, file.File.Source, file.File.AST)
 }

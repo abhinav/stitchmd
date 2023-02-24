@@ -152,8 +152,7 @@ func TestParseSummary(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := goldast.Parse(goldast.DefaultParser(), "", []byte(tt.give))
-			require.NoError(t, err)
+			f := goldast.Parse(goldast.DefaultParser(), "", []byte(tt.give))
 
 			got, err := ParseSummary(f)
 			require.NoError(t, err)
@@ -202,15 +201,14 @@ func TestParseSummaryErrors(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := goldast.Parse(goldast.DefaultParser(), tt.Filename, []byte(tt.Give))
-			require.NoError(t, err)
+			f := goldast.Parse(goldast.DefaultParser(), tt.Filename, []byte(tt.Give))
 			defer func() {
 				if t.Failed() {
 					f.AST.Dump(f.Source, 0)
 				}
 			}()
 
-			_, err = ParseSummary(f)
+			_, err := ParseSummary(f)
 			require.Error(t, err)
 
 			var gotErrors []error
