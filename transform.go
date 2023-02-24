@@ -63,7 +63,8 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 	}
 
 	if err := t.transformLink(".", f.Item.AST); err != nil {
-		t.Log.Printf("%v:%v", t.tocFile.Position(f.Item.Offset()), err)
+		offset := goldast.OffsetOf(f.Item.Node())
+		t.Log.Printf("%v:%v", t.tocFile.Position(offset), err)
 	}
 
 	dir := filepath.Dir(f.Path)

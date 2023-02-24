@@ -4,7 +4,6 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/stitchmd/internal/goldast"
-	"go.abhg.dev/stitchmd/internal/pos"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
 
@@ -13,13 +12,13 @@ import (
 type Item interface {
 	item() // seals the interface
 
-	Offset() int
+	Node() ast.Node
 }
 
 // itemTreeParser is a recursive-descent parser for a hierarchy of list items.
 type itemTreeParser struct {
 	src  []byte
-	errs *pos.ErrorList
+	errs *goldast.ErrorList
 
 	depth int // current depth
 	items tree.List[Item]
@@ -39,7 +38,7 @@ func (p *itemTreeParser) Parse(ls *ast.List) tree.List[Item] {
 		if !ok {
 			// Impossible for parsed ASTs.
 			// Only hand-crafted ASTs could trigger this.
-			p.errs.Pushf(goldast.OffsetOf(ch), "expected a list item, got %v", ch.Kind())
+			p.errs.Pushf(ch, "expected a list item, got %v", ch.Kind())
 			continue
 		}
 		p.parseItem(li)
@@ -57,13 +56,13 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 	)
 	switch count := li.ChildCount(); count {
 	case 0:
-		p.errs.Pushf(goldast.OffsetOf(li), "list item is empty")
+		p.errs.Pushf(li, "list item is empty")
 		return
 
 	case 2:
 		ch, ok := li.LastChild().(*ast.List)
 		if !ok {
-			p.errs.Pushf(goldast.OffsetOf(li.LastChild()), "expected a list, got %v", li.LastChild().Kind())
+			p.errs.Pushf(li.LastChild(), "expected a list, got %v", li.LastChild().Kind())
 			return
 		}
 		children = ch
@@ -73,7 +72,7 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 		case ast.KindTextBlock, ast.KindParagraph:
 			n = ch
 		default:
-			p.errs.Pushf(goldast.OffsetOf(ch), "expected text or paragraph, got %v", ch.Kind())
+			p.errs.Pushf(ch, "expected text or paragraph, got %v", ch.Kind())
 			return
 		}
 
@@ -83,14 +82,14 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 			childKinds = append(childKinds, ch.Kind().String())
 		}
 
-		p.errs.Pushf(goldast.OffsetOf(li.FirstChild()), "list item has too many children (%v): %v", count, childKinds)
+		p.errs.Pushf(li.FirstChild(), "list item has too many children (%v): %v", count, childKinds)
 		return
 	}
 
 	combineTextNodes(n)
 	switch count := n.ChildCount(); count {
 	case 0:
-		p.errs.Pushf(goldast.OffsetOf(n), "list item is empty")
+		p.errs.Pushf(n, "list item is empty")
 		return
 	case 1:
 		n = n.FirstChild()
@@ -99,7 +98,7 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 		for ch := n.FirstChild(); ch != nil; ch = ch.NextSibling() {
 			childKinds = append(childKinds, ch.Kind().String())
 		}
-		p.errs.Pushf(goldast.OffsetOf(n), "text has too many children (%v): %v", count, childKinds)
+		p.errs.Pushf(n, "text has too many children (%v): %v", count, childKinds)
 		return
 	}
 
@@ -110,7 +109,7 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 	case *ast.Text:
 		item = p.parseTextItem(n, children != nil)
 	default:
-		p.errs.Pushf(goldast.OffsetOf(n), "expected a link or text, got %v", n.Kind())
+		p.errs.Pushf(n, "expected a link or text, got %v", n.Kind())
 		return
 	}
 
@@ -153,10 +152,10 @@ func (p *itemTreeParser) parseLinkItem(link *ast.Link) *LinkItem {
 
 func (*LinkItem) item() {}
 
-// Offset returns the offset in the summary document
-// at which the link item appears.
-func (i *LinkItem) Offset() int {
-	return goldast.OffsetOf(i.AST)
+// Node reports the underlying AST node
+// that this item was parsed from.
+func (i *LinkItem) Node() ast.Node {
+	return i.AST
 }
 
 // TextItem is a single text entry in the table of contents.
@@ -176,7 +175,7 @@ type TextItem struct {
 
 func (p *itemTreeParser) parseTextItem(text *ast.Text, hasChildren bool) *TextItem {
 	if !hasChildren {
-		p.errs.Pushf(goldast.OffsetOf(text), "text item must have children")
+		p.errs.Pushf(text, "text item must have children")
 		return nil
 	}
 
@@ -189,10 +188,10 @@ func (p *itemTreeParser) parseTextItem(text *ast.Text, hasChildren bool) *TextIt
 
 func (*TextItem) item() {}
 
-// Offset returns the offset in the summary document
-// at which the text item appears.
-func (i *TextItem) Offset() int {
-	return goldast.OffsetOf(i.AST)
+// Node reports the underlying AST node
+// that this item was parsed from.
+func (i *TextItem) Node() ast.Node {
+	return i.AST
 }
 
 // combineTextNodes combines adjacent text child nodes of the given node

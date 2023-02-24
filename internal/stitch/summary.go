@@ -7,7 +7,6 @@ package stitch
 import (
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/stitchmd/internal/goldast"
-	"go.abhg.dev/stitchmd/internal/pos"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
 
@@ -43,7 +42,7 @@ type Summary struct {
 //
 // Anything else will result in an error.
 func ParseSummary(f *goldast.File) (*Summary, error) {
-	errs := pos.NewErrorList(f.Info)
+	errs := goldast.NewErrorList(f.Info)
 	summary := (&summaryParser{
 		src:  f.Source,
 		errs: errs,
@@ -53,7 +52,7 @@ func ParseSummary(f *goldast.File) (*Summary, error) {
 
 type summaryParser struct {
 	src      []byte
-	errs     *pos.ErrorList
+	errs     *goldast.ErrorList
 	sections []*Section
 }
 
@@ -67,7 +66,7 @@ func (p *summaryParser) Parse(n ast.Node) *Summary {
 	}
 
 	if len(p.sections) == 0 && p.errs.Len() == 0 {
-		p.errs.Pushf(goldast.OffsetOf(n), "no sections found")
+		p.errs.Pushf(n, "no sections found")
 		return nil
 	}
 
@@ -95,9 +94,9 @@ func (p *summaryParser) parseSection(n ast.Node) (*Section, ast.Node) {
 	ls, ok := n.(*ast.List)
 	if !ok {
 		if title != nil {
-			p.errs.Pushf(goldast.OffsetOf(n), "expected a list, got %v", n.Kind())
+			p.errs.Pushf(n, "expected a list, got %v", n.Kind())
 		} else {
-			p.errs.Pushf(goldast.OffsetOf(n), "expected a list or heading, got %v", n.Kind())
+			p.errs.Pushf(n, "expected a list or heading, got %v", n.Kind())
 		}
 		return nil, n.NextSibling()
 	}
