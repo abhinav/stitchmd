@@ -109,22 +109,19 @@ func (c *collector) collectItem(item stitch.Item) (markdownItem, error) {
 }
 
 type markdownFileItem struct {
-	// TOCLink is the original link in the TOC
+	// Path is the path to the Markdown file.
+	Path string
+
+	// Item is the original link in the TOC
 	// that referenced the Markdown file.
-	TOCLink *goldast.Link
-
-	// Depth is the depth at which the link was found in the TOC.
-	TOCDepth int
-
-	// File is the parsed Markdown file
-	// that the link points to.
-	File *goldast.File
+	Item *stitch.LinkItem
 
 	// Title is the title of the Markdown file, if any.
 	Title *markdownHeading
 
-	// Path is the path to the Markdown file.
-	Path string
+	// File is the parsed Markdown file
+	// that the link points to.
+	File *goldast.File
 
 	// Links holds all links that were found in the Markdown file.
 	Links []*goldast.Link
@@ -132,6 +129,8 @@ type markdownFileItem struct {
 	// Headings holds all headings that were found in the Markdown file.
 	Headings []*markdownHeading
 
+	// HeadingsByOldID maps IDs of headings, as interpreted in isolation.
+	// The IDs will change once interpreted as part of the combined document.
 	HeadingsByOldID map[string]*markdownHeading
 }
 
@@ -175,10 +174,9 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 	}
 
 	mf := &markdownFileItem{
-		TOCLink:         item.AST,
-		TOCDepth:        item.Depth,
-		File:            f,
 		Path:            item.Target,
+		Item:            item,
+		File:            f,
 		Links:           links,
 		Headings:        headings,
 		HeadingsByOldID: headingsByOldID,
@@ -217,9 +215,8 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 }
 
 type markdownGroupItem struct {
-	TOCText  *goldast.Text
-	TOCDepth int
-	Heading  *markdownHeading
+	Item    *stitch.TextItem
+	Heading *markdownHeading
 }
 
 func (*markdownGroupItem) markdownItem() {}
@@ -231,8 +228,7 @@ func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 
 	id, _ := c.IDGen.GenerateID(item.Text)
 	return &markdownGroupItem{
-		TOCText:  item.AST,
-		TOCDepth: item.Depth,
+		Item: item,
 		Heading: &markdownHeading{
 			AST: goldast.WithPos(h, 0 /* never used */),
 			ID:  id,

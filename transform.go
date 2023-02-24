@@ -44,10 +44,10 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformGroup(group *markdownGroupItem) {
-	group.Heading.AST.Node.Level += group.TOCDepth + t.sectionLevel
+	group.Heading.AST.Node.Level += group.Item.Depth + t.sectionLevel
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
-	item := group.TOCText
+	item := group.Item.AST
 	parent := item.Node.Parent()
 
 	link := ast.NewLink()
@@ -59,11 +59,11 @@ func (t *transformer) transformGroup(group *markdownGroupItem) {
 
 func (t *transformer) transformFile(f *markdownFileItem) {
 	for _, h := range f.Headings {
-		h.AST.Node.Level += f.TOCDepth + t.sectionLevel
+		h.AST.Node.Level += f.Item.Depth + t.sectionLevel
 	}
 
-	if err := t.transformLink(".", f.TOCLink); err != nil {
-		t.Log.Printf("%v:%v", t.tocFile.Position(f.TOCLink.Pos()), err)
+	if err := t.transformLink(".", f.Item.AST); err != nil {
+		t.Log.Printf("%v:%v", t.tocFile.Position(f.Item.AST.Pos()), err)
 	}
 
 	dir := filepath.Dir(f.Path)
