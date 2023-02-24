@@ -160,11 +160,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		h1s      []*markdownHeading
 	)
 	headingsByOldID := make(map[string]*markdownHeading)
-	err = goldast.Walk(f.AST, func(n *goldast.Any, enter bool) (ast.WalkStatus, error) {
-		if !enter {
-			return ast.WalkContinue, nil
-		}
-
+	err = goldast.Walk(f.AST, func(n *goldast.Any) error {
 		if l, ok := goldast.Cast[*ast.Link](n); ok {
 			links = append(links, l)
 		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
@@ -174,11 +170,9 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 				h1s = append(h1s, mh)
 			}
 			headingsByOldID[mh.OldID] = mh
-		} else {
-			return ast.WalkContinue, nil
 		}
 
-		return ast.WalkSkipChildren, nil
+		return nil
 	})
 	if err != nil {
 		return nil, err
