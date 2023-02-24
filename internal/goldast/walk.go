@@ -1,39 +1,40 @@
 package goldast
 
 import (
+	"errors"
+
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/stitchmd/internal/pos"
 )
 
+// ErrSkip is returned by a [Visitor]
+// to indicate that the children of the current node should not be visited.
+var ErrSkip = errors.New("skip children")
+
 // Visitor visits individual nodes in a Goldmark AST.
-type Visitor func(n *Any, enter bool) (ast.WalkStatus, error)
+type Visitor func(n *Any) error
 
-// Walk is a variant of [ast.Walk] with support for position tracking.
+// Walk is a simpler variant of [ast.Walk] with support for position tracking.
+// It does not support enter/exit tracking.
+//
+// To skip children, return [ErrSkip].
+// All other errors will stop the walker.
 func Walk[T ast.Node](node *Node[T], fn Visitor) error {
-	return ast.Walk(node.Node, (&walker{
-		posstack: []pos.Pos{node.Pos()},
-		visit:    fn,
-	}).Visit)
+	return walk(node.AsAny(), fn)
 }
 
-type walker struct {
-	posstack []pos.Pos // stack
-	visit    Visitor
-}
-
-func (w *walker) Visit(n ast.Node, enter bool) (ast.WalkStatus, error) {
-	pos, ok := posOf(n)
-	if !ok {
-		pos = w.posstack[len(w.posstack)-1]
+func walk(n *Any, visit Visitor) error {
+	if err := visit(n); err != nil {
+		if errors.Is(err, ErrSkip) {
+			err = nil
+		}
+		return err
 	}
 
-	if enter {
-		w.posstack = append(w.posstack, pos)
-	} else {
-		defer func() {
-			w.posstack = w.posstack[:len(w.posstack)-1]
-		}()
+	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+		if err := walk(c, visit); err != nil {
+			return err
+		}
 	}
 
-	return w.visit(&Any{Node: n, pos: pos}, enter)
+	return nil
 }

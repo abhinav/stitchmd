@@ -18,11 +18,9 @@ func TestWalk(t *testing.T) {
 	require.NoError(t, err)
 
 	var nodes []*Any
-	err = Walk(f.AST, func(n *Any, enter bool) (ast.WalkStatus, error) {
-		if enter {
-			nodes = append(nodes, n)
-		}
-		return ast.WalkContinue, nil
+	err = Walk(f.AST, func(n *Any) error {
+		nodes = append(nodes, n)
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -46,4 +44,23 @@ func TestWalk(t *testing.T) {
 		assert.Equal(t, "foo.md:3:1", posc.Position(n.Pos()).String(), "paragraph text")
 		assert.Equal(t, "hello world.", string(n.Node.Text(f.Source)))
 	}
+}
+
+func TestWalkSkip(t *testing.T) {
+	t.Parallel()
+
+	parser := goldmark.New().Parser()
+
+	f, err := Parse(parser, "foo.md", []byte("# Foo"))
+	require.NoError(t, err)
+
+	var nodes []*Any
+	err = Walk(f.AST, func(n *Any) error {
+		nodes = append(nodes, n)
+		return ErrSkip
+	})
+	require.NoError(t, err)
+
+	require.Len(t, nodes, 1)
+	assert.IsType(t, new(ast.Document), nodes[0].Node)
 }
