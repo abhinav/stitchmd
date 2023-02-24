@@ -6,6 +6,7 @@ package goldast
 
 import (
 	"github.com/yuin/goldmark"
+	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -45,6 +46,9 @@ func Parse(p parser.Parser, filename string, src []byte, opts ...parser.ParseOpt
 // application.
 func DefaultParser() parser.Parser {
 	return goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(
+			extension.GFM,
+			meta.New(),
+		),
 	).Parser()
 }
