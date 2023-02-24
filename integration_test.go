@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
@@ -70,7 +71,8 @@ func TestIntegration(t *testing.T) {
 				Dir: dir,
 			}))
 
-			require.Equal(t, tt.Want, got.String())
+			assert.Equal(t, tt.Want, got.String())
+			assert.Empty(t, stderr.String(), "stderr")
 		})
 	}
 }
