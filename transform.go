@@ -35,7 +35,7 @@ func (t *transformer) Transform(coll *markdownCollection) {
 func (t *transformer) transformItem(item markdownItem) {
 	switch item := item.(type) {
 	case *markdownGroupItem:
-		t.transformTitle(item)
+		t.transformGroup(item)
 	case *markdownFileItem:
 		t.transformFile(item)
 	default:
@@ -43,7 +43,7 @@ func (t *transformer) transformItem(item markdownItem) {
 	}
 }
 
-func (t *transformer) transformTitle(group *markdownGroupItem) {
+func (t *transformer) transformGroup(group *markdownGroupItem) {
 	group.Heading.AST.Node.Level += group.TOCDepth + t.sectionLevel
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
@@ -58,29 +58,6 @@ func (t *transformer) transformTitle(group *markdownGroupItem) {
 }
 
 func (t *transformer) transformFile(f *markdownFileItem) {
-	if f.Title == nil {
-		// The included file does not have a title.
-		// We'll generate one from the TOC item text.
-
-		// If there are any existing level 1 headers,
-		// they must all be pushed down one level
-		// to make room for the new level 1 header.
-		var levelOffset int
-		for _, h := range f.Headings {
-			if h.AST.Node.Level == 1 {
-				levelOffset = 1
-				break
-			}
-		}
-		if levelOffset > 0 {
-			for _, h := range f.Headings {
-				h.AST.Node.Level += levelOffset
-			}
-		}
-
-		f.Headings = append(f.Headings, f.TOCTitle)
-	}
-
 	for _, h := range f.Headings {
 		h.AST.Node.Level += f.TOCDepth + t.sectionLevel
 	}
@@ -94,6 +71,13 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 		if err := t.transformLink(dir, l); err != nil {
 			t.Log.Printf("%v:%v", f.File.Position(l.Pos()), err)
 		}
+	}
+
+	doc := f.File.AST.Node
+	if doc.ChildCount() > 0 {
+		doc.InsertBefore(doc, doc.FirstChild(), f.Title.AST.Node)
+	} else {
+		doc.AppendChild(doc, f.Title.AST.Node)
 	}
 }
 
@@ -122,11 +106,7 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 			u.Fragment = h.ID
 		}
 	} else {
-		if to.Title != nil {
-			u.Fragment = to.Title.ID
-		} else {
-			u.Fragment = to.TOCTitle.ID
-		}
+		u.Fragment = to.Title.ID
 	}
 	link.Node.Destination = []byte(u.String())
 
