@@ -123,10 +123,6 @@ type markdownFileItem struct {
 	// Title is the title of the Markdown file, if any.
 	Title *markdownHeading
 
-	// TOCTitle is the title for this file generated from the TOC text.
-	// Only one of Title and TOCTitle is set.
-	TOCTitle *markdownHeading
-
 	// Path is the path to the Markdown file.
 	Path string
 
@@ -193,13 +189,27 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 	// then use it as the title.
 	if len(h1s) == 1 && h1s[0].AST.PreviousSibling() == nil {
 		mf.Title = h1s[0]
+		f.AST.Node.RemoveChild(f.AST.Node, h1s[0].AST.Node)
 	} else {
+		// The included file does not have a title.
+		// Generate one from the TOC link.
 		heading := ast.NewHeading(1)
 		heading.AppendChild(
 			heading,
 			ast.NewString([]byte(item.Text)),
 		)
-		mf.TOCTitle = c.newHeading(f, fidgen, goldast.WithPos(heading, f.Pos))
+		heading.SetBlankPreviousLines(true)
+		mf.Title = c.newHeading(f, fidgen, goldast.WithPos(heading, f.Pos))
+
+		// Push all existing headers down one level
+		// to make room for the new title
+		// if any of them is a level 1 header.
+		if len(h1s) > 0 {
+			for _, h := range mf.Headings {
+				h.AST.Node.Level++
+			}
+		}
+		mf.Headings = append([]*markdownHeading{mf.Title}, mf.Headings...)
 	}
 
 	c.files[item.Target] = mf
@@ -217,6 +227,7 @@ func (*markdownGroupItem) markdownItem() {}
 func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 	h := ast.NewHeading(1) // will be transformed
 	h.AppendChild(h, ast.NewString([]byte(item.Text)))
+	h.SetBlankPreviousLines(true)
 
 	id, _ := c.IDGen.GenerateID(item.Text)
 	return &markdownGroupItem{
