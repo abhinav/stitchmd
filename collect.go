@@ -8,7 +8,6 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/header"
-	"go.abhg.dev/stitchmd/internal/pos"
 	"go.abhg.dev/stitchmd/internal/stitch"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
@@ -39,7 +38,7 @@ func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
 		return nil, err
 	}
 
-	errs := pos.NewErrorList(f.Info)
+	errs := goldast.NewErrorList(f.Info)
 	sections := make([]*markdownSection, len(toc.Sections))
 	for i, sec := range toc.Sections {
 		sections[i] = c.collectSection(errs, sec)
@@ -65,11 +64,11 @@ func (s *markdownSection) TitleLevel() int {
 	return 0
 }
 
-func (c *collector) collectSection(errs *pos.ErrorList, sec *stitch.Section) *markdownSection {
+func (c *collector) collectSection(errs *goldast.ErrorList, sec *stitch.Section) *markdownSection {
 	items := tree.TransformList(sec.Items, func(item stitch.Item) markdownItem {
 		i, err := c.collectItem(item)
 		if err != nil {
-			errs.Pushf(item.Offset(), "%v", err)
+			errs.Pushf(item.Node(), "%v", err)
 			return nil
 		}
 		return i
