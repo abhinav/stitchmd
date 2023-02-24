@@ -53,14 +53,14 @@ func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
 }
 
 type markdownSection struct {
-	Title    *goldast.Heading
-	TOCItems *goldast.List
+	Title    *ast.Heading
+	TOCItems *ast.List
 	Items    tree.List[markdownItem]
 }
 
 func (s *markdownSection) TitleLevel() int {
 	if s.Title != nil {
-		return s.Title.Node.Level
+		return s.Title.Level
 	}
 	return 0
 }
@@ -69,13 +69,13 @@ func (c *collector) collectSection(errs *pos.ErrorList, sec *stitch.Section) *ma
 	items := tree.TransformList(sec.Items, func(item stitch.Item) markdownItem {
 		i, err := c.collectItem(item)
 		if err != nil {
-			errs.Pushf(item.Pos(), "%v", err)
+			errs.Pushf(item.Offset(), "%v", err)
 			return nil
 		}
 		return i
 	})
 
-	var title *goldast.Heading
+	var title *ast.Heading
 	if sec.Title != nil {
 		title = sec.Title.AST
 	}
@@ -124,7 +124,7 @@ type markdownFileItem struct {
 	File *goldast.File
 
 	// Links holds all links that were found in the Markdown file.
-	Links []*goldast.Link
+	Links []*ast.Link
 
 	// Headings holds all headings that were found in the Markdown file.
 	Headings []*markdownHeading
@@ -142,31 +142,27 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		return nil, err
 	}
 
-	f, err := goldast.Parse(c.Parser, item.Target, src)
-	if err != nil {
-		return nil, err
-	}
-
+	f := goldast.Parse(c.Parser, item.Target, src)
 	fidgen := header.NewIDGen()
 
 	var (
-		links    []*goldast.Link
+		links    []*ast.Link
 		headings []*markdownHeading
 		h1s      []*markdownHeading
 	)
 	headingsByOldID := make(map[string]*markdownHeading)
-	err = goldast.Walk(f.AST, func(n *goldast.Any) error {
-		if l, ok := goldast.Cast[*ast.Link](n); ok {
-			links = append(links, l)
-		} else if h, ok := goldast.Cast[*ast.Heading](n); ok {
-			mh := c.newHeading(f, fidgen, h)
+	err = goldast.Walk(f.AST, func(n ast.Node) error {
+		switch n := n.(type) {
+		case *ast.Link:
+			links = append(links, n)
+		case *ast.Heading:
+			mh := c.newHeading(f, fidgen, n)
 			headings = append(headings, mh)
 			if mh.Level() == 1 {
 				h1s = append(h1s, mh)
 			}
 			headingsByOldID[mh.OldID] = mh
 		}
-
 		return nil
 	})
 	if err != nil {
@@ -187,7 +183,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 	// then use it as the title.
 	if len(h1s) == 1 && h1s[0].AST.PreviousSibling() == nil {
 		mf.Title = h1s[0]
-		f.AST.Node.RemoveChild(f.AST.Node, h1s[0].AST.Node)
+		f.AST.RemoveChild(f.AST, h1s[0].AST)
 	} else {
 		// The included file does not have a title.
 		// Generate one from the TOC link.
@@ -197,14 +193,14 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 			ast.NewString([]byte(item.Text)),
 		)
 		heading.SetBlankPreviousLines(true)
-		mf.Title = c.newHeading(f, fidgen, goldast.WithPos(heading, f.Pos))
+		mf.Title = c.newHeading(f, fidgen, heading)
 
 		// Push all existing headers down one level
 		// to make room for the new title
 		// if any of them is a level 1 header.
 		if len(h1s) > 0 {
 			for _, h := range mf.Headings {
-				h.AST.Node.Level++
+				h.AST.Level++
 			}
 		}
 		mf.Headings = append([]*markdownHeading{mf.Title}, mf.Headings...)
@@ -230,22 +226,22 @@ func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 	return &markdownGroupItem{
 		Item: item,
 		Heading: &markdownHeading{
-			AST: goldast.WithPos(h, 0 /* never used */),
+			AST: h,
 			ID:  id,
 		},
 	}
 }
 
 type markdownHeading struct {
-	AST *goldast.Heading
+	AST *ast.Heading
 	ID  string
 
 	// ID of the heading in the original file.
 	OldID string
 }
 
-func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *goldast.Heading) *markdownHeading {
-	text := string(h.Node.Text(f.Source))
+func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Heading) *markdownHeading {
+	text := string(h.Text(f.Source))
 	id, _ := c.IDGen.GenerateID(text)
 	oldID, _ := fgen.GenerateID(text)
 	return &markdownHeading{
@@ -256,5 +252,5 @@ func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *goldast.H
 }
 
 func (h *markdownHeading) Level() int {
-	return h.AST.Node.Level
+	return h.AST.Level
 }

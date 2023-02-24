@@ -106,11 +106,7 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	mdParser := goldast.DefaultParser()
 
-	f, err := goldast.Parse(mdParser, filename, src)
-	if err != nil {
-		return err
-	}
-
+	f := goldast.Parse(mdParser, filename, src)
 	coll, err := (&collector{
 		FS:     os.DirFS(opts.Dir),
 		Parser: mdParser,

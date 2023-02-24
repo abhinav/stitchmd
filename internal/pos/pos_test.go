@@ -58,7 +58,7 @@ func TestInfo_Position(t *testing.T) {
 	assert.Equal(t, "a.txt", info.Filename())
 
 	tests := []struct {
-		give Pos
+		give int
 		want Position
 	}{
 		{0, Position{File: "a.txt", Line: 1, Column: 1}},
@@ -77,8 +77,8 @@ func TestInfo_Position(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(fmt.Sprint(tt.give), func(t *testing.T) {
-			// t.Parallel()
-			//
+			t.Parallel()
+
 			assert.Equal(t, tt.want, info.Position(tt.give))
 		})
 	}

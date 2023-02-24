@@ -7,9 +7,6 @@ import (
 	"strconv"
 )
 
-// Pos is an efficient representation of a position inside a file.
-type Pos int
-
 // Position is the human-readable position information
 // for a location in a file.
 type Position struct {
@@ -70,8 +67,7 @@ func (c *Info) Filename() string {
 // for the given offset in the file.
 //
 // Position panics if the offset is out of bounds of the file.
-func (c *Info) Position(pos Pos) Position {
-	offset := int(pos) // pos is just an offset for now
+func (c *Info) Position(offset int) Position {
 	if offset == 0 {
 		return Position{File: c.file, Line: 1, Column: 1}
 	}

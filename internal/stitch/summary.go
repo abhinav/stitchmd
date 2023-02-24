@@ -57,7 +57,7 @@ type summaryParser struct {
 	sections []*Section
 }
 
-func (p *summaryParser) Parse(n *goldast.Any) *Summary {
+func (p *summaryParser) Parse(n ast.Node) *Summary {
 	for n := n.FirstChild(); n != nil; {
 		sec, next := p.parseSection(n)
 		if sec != nil {
@@ -67,7 +67,7 @@ func (p *summaryParser) Parse(n *goldast.Any) *Summary {
 	}
 
 	if len(p.sections) == 0 && p.errs.Len() == 0 {
-		p.errs.Pushf(n.Pos(), "no sections found")
+		p.errs.Pushf(goldast.OffsetOf(n), "no sections found")
 		return nil
 	}
 
@@ -85,19 +85,19 @@ type Section struct {
 
 	// AST holds the original list
 	// from which this Section was built.
-	AST *goldast.List
+	AST *ast.List
 }
 
 // parseSection parses a Section from the given node.
-func (p *summaryParser) parseSection(n *goldast.Any) (*Section, *goldast.Any) {
+func (p *summaryParser) parseSection(n ast.Node) (*Section, ast.Node) {
 	title, n := p.parseSectionTitle(n)
 
-	ls, ok := goldast.Cast[*ast.List](n)
+	ls, ok := n.(*ast.List)
 	if !ok {
 		if title != nil {
-			p.errs.Pushf(n.Pos(), "expected a list, got %v", n.Kind())
+			p.errs.Pushf(goldast.OffsetOf(n), "expected a list, got %v", n.Kind())
 		} else {
-			p.errs.Pushf(n.Pos(), "expected a list or heading, got %v", n.Kind())
+			p.errs.Pushf(goldast.OffsetOf(n), "expected a list or heading, got %v", n.Kind())
 		}
 		return nil, n.NextSibling()
 	}
@@ -123,18 +123,18 @@ type SectionTitle struct {
 	Level int
 
 	// AST node that this title was built from.
-	AST *goldast.Heading
+	AST *ast.Heading
 }
 
-func (p *summaryParser) parseSectionTitle(n *goldast.Any) (*SectionTitle, *goldast.Any) {
-	h, ok := goldast.Cast[*ast.Heading](n)
+func (p *summaryParser) parseSectionTitle(n ast.Node) (*SectionTitle, ast.Node) {
+	h, ok := n.(*ast.Heading)
 	if !ok {
 		return nil, n
 	}
 
 	return &SectionTitle{
-		Text:  string(h.Node.Text(p.src)),
-		Level: h.Node.Level,
+		Text:  string(h.Text(p.src)),
+		Level: h.Level,
 		AST:   h,
 	}, n.NextSibling()
 }

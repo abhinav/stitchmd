@@ -44,45 +44,45 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformGroup(group *markdownGroupItem) {
-	group.Heading.AST.Node.Level += group.Item.Depth + t.sectionLevel
+	group.Heading.AST.Level += group.Item.Depth + t.sectionLevel
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
 	item := group.Item.AST
-	parent := item.Node.Parent()
+	parent := item.Parent()
 
 	link := ast.NewLink()
 	link.Destination = []byte("#" + group.Heading.ID)
-	parent.ReplaceChild(parent, item.Node, link)
+	parent.ReplaceChild(parent, item, link)
 
-	link.AppendChild(link, item.Node)
+	link.AppendChild(link, item)
 }
 
 func (t *transformer) transformFile(f *markdownFileItem) {
 	for _, h := range f.Headings {
-		h.AST.Node.Level += f.Item.Depth + t.sectionLevel
+		h.AST.Level += f.Item.Depth + t.sectionLevel
 	}
 
 	if err := t.transformLink(".", f.Item.AST); err != nil {
-		t.Log.Printf("%v:%v", t.tocFile.Position(f.Item.AST.Pos()), err)
+		t.Log.Printf("%v:%v", t.tocFile.Position(f.Item.Offset()), err)
 	}
 
 	dir := filepath.Dir(f.Path)
 	for _, l := range f.Links {
 		if err := t.transformLink(dir, l); err != nil {
-			t.Log.Printf("%v:%v", f.File.Position(l.Pos()), err)
+			t.Log.Printf("%v:%v", f.File.Position(goldast.OffsetOf(l)), err)
 		}
 	}
 
-	doc := f.File.AST.Node
+	doc := f.File.AST
 	if doc.ChildCount() > 0 {
-		doc.InsertBefore(doc, doc.FirstChild(), f.Title.AST.Node)
+		doc.InsertBefore(doc, doc.FirstChild(), f.Title.AST)
 	} else {
-		doc.AppendChild(doc, f.Title.AST.Node)
+		doc.AppendChild(doc, f.Title.AST)
 	}
 }
 
-func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) error {
-	u, err := url.Parse(string(link.Node.Destination))
+func (t *transformer) transformLink(from string, link *ast.Link) error {
+	u, err := url.Parse(string(link.Destination))
 	if err != nil || u.Scheme != "" || u.Host != "" {
 		return nil // skip external and invalid links
 	}
@@ -108,7 +108,7 @@ func (t *transformer) transformLink(from string, link *goldast.Node[*ast.Link]) 
 	} else {
 		u.Fragment = to.Title.ID
 	}
-	link.Node.Destination = []byte(u.String())
+	link.Destination = []byte(u.String())
 
 	return nil
 }

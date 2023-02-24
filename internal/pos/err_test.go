@@ -9,22 +9,22 @@ import (
 
 func TestError(t *testing.T) {
 	wrapped := errors.New("great sadness")
-	posErr := &Error{Pos: 42, Err: wrapped}
+	posErr := &posError{Offset: 42, Err: wrapped}
 
 	assert.Equal(t, "great sadness", posErr.Error())
 	assert.ErrorIs(t, posErr, wrapped)
 }
 
 func TestErrorList(t *testing.T) {
-	info := fakeInfo(func(pos Pos) Position {
-		switch pos {
+	info := fakeInfo(func(offset int) Position {
+		switch offset {
 		case 42:
 			return Position{File: "foo", Line: 42, Column: 13}
 		case 13:
 			return Position{File: "foo", Line: 13, Column: 42}
 		default:
-			t.Errorf("unexpected pos %v", pos)
-			panic("unexpected pos")
+			t.Errorf("unexpected offset %v", offset)
+			panic("unexpected offset")
 		}
 	})
 
@@ -54,8 +54,8 @@ func TestErrorList(t *testing.T) {
 	})
 }
 
-type fakeInfo func(Pos) Position
+type fakeInfo func(int) Position
 
-func (f fakeInfo) Position(pos Pos) Position {
-	return f(pos)
+func (f fakeInfo) Position(offset int) Position {
+	return f(offset)
 }

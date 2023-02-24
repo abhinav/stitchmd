@@ -6,19 +6,18 @@ import (
 	"sort"
 )
 
-// Error wraps an error with position information.
-type Error struct {
-	Pos Pos
-	Err error
+// posError wraps an error with position information.
+type posError struct {
+	Offset int
+	Err    error
 }
 
-// Error reports the message from the underlying error.
-func (e *Error) Error() string {
+func (e *posError) Error() string {
 	return e.Err.Error()
 }
 
 // Unwrap returns the underlying error.
-func (e *Error) Unwrap() error {
+func (e *posError) Unwrap() error {
 	return e.Err
 }
 
@@ -27,9 +26,9 @@ func (e *Error) Unwrap() error {
 // ErrorList is not thread-safe.
 type ErrorList struct {
 	info interface {
-		Position(Pos) Position
+		Position(int) Position
 	}
-	errs []*Error
+	errs []*posError
 }
 
 // NewErrorList builds an ErrorList
@@ -38,17 +37,17 @@ func NewErrorList(info *Info) *ErrorList {
 	return newErrorList(info)
 }
 
-func newErrorList(info interface {
-	Position(Pos) Position
-},
-) *ErrorList {
+func newErrorList(info interface{ Position(int) Position }) *ErrorList {
 	return &ErrorList{info: info}
 }
 
 // Pushf builds an error with the given message and arguments,
 // and pushes it into the list.
-func (el *ErrorList) Pushf(pos Pos, format string, args ...interface{}) {
-	el.errs = append(el.errs, &Error{Pos: pos, Err: fmt.Errorf(format, args...)})
+func (el *ErrorList) Pushf(off int, format string, args ...interface{}) {
+	el.errs = append(el.errs, &posError{
+		Offset: off,
+		Err:    fmt.Errorf(format, args...),
+	})
 }
 
 // Len reports the length of the ErrorList.
@@ -72,13 +71,13 @@ func (el *ErrorList) Err() error {
 	}
 
 	sort.Slice(el.errs, func(i, j int) bool {
-		return el.errs[i].Pos < el.errs[j].Pos
+		return el.errs[i].Offset < el.errs[j].Offset
 	})
 
 	var errs []error
 	for _, e := range el.errs {
 		errs = append(errs,
-			fmt.Errorf("%v:%w", el.info.Position(e.Pos), e.Err))
+			fmt.Errorf("%v:%w", el.info.Position(e.Offset), e.Err))
 	}
 	return errors.Join(errs...)
 }
