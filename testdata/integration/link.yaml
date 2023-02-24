@@ -1,0 +1,104 @@
+- name: file
+  give: |
+    - [foo](foo.md)
+    - [baz](bar/baz.md)
+  files:
+    foo.md: |
+      # Foo
+
+      Stuff happens here.
+      See also [Baz](bar/baz.md)
+    bar/baz.md: |
+      # Baz
+
+      Relates to [Foo](../foo.md).
+  want: |
+    - [foo](#foo)
+    - [baz](#baz)
+
+    # Foo
+
+    Stuff happens here.
+    See also [Baz](#baz)
+
+    # Baz
+
+    Relates to [Foo](#foo).
+
+- name: header
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      # Foo
+
+      ## What is Foo?
+
+      Foo relates to [Bar](bar.md).
+      Read more about setting up Bar
+      [here](bar.md#setup).
+    bar.md: |
+      # Bar
+
+      Bar is a follow up to [Foo](foo.md).
+      Don't know what Foo is?
+      See [What is Foo?](foo.md#what-is-foo).
+
+      ## Setup
+
+      Set up Bar with these steps.
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    ## What is Foo?
+
+    Foo relates to [Bar](#bar).
+    Read more about setting up Bar
+    [here](#setup).
+
+    # Bar
+
+    Bar is a follow up to [Foo](#foo).
+    Don't know what Foo is?
+    See [What is Foo?](#what-is-foo).
+
+    ## Setup
+
+    Set up Bar with these steps.
+
+- name: header collision
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      # Foo
+
+      ## Setup
+
+      See also [setting up bar](bar.md#setup).
+    bar.md: |
+      # Bar
+
+      ## Setup
+
+      See also [setting up foo](foo.md#setup).
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    ## Setup
+
+    See also [setting up bar](#setup-1).
+
+    # Bar
+
+    ## Setup
+
+    See also [setting up foo](#setup).

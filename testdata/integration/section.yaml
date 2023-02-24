@@ -1,0 +1,79 @@
+- name: top level
+  give: |
+    # Foo
+
+    - [bar](bar.md)
+  files:
+    bar.md: "# Bar"
+  want: |
+    # Foo
+
+    - [bar](#bar)
+
+    ## Bar
+
+- name: deep
+  give: |
+    ### Foo
+
+    - [bar](bar.md)
+  files:
+    bar.md: "# Bar"
+  want: |
+    ### Foo
+
+    - [bar](#bar)
+
+    #### Bar
+
+- name: multiple
+  give: |
+    # User Guide
+
+    - [Getting Started](start.md)
+    - [Installation](install.md)
+
+    # Appendix
+
+    - [FAQ](faq.md)
+  files:
+    start.md: |
+      # Getting Started
+
+      Take the following steps to get started.
+    install.md: |
+      # Installation
+
+      To install from source, run the following command.
+    faq.md: |
+      # Frequently Asked Questions
+
+      ## How to do a thing?
+
+      To do a thing, start by doing it.
+  want: |
+    # User Guide
+
+    - [Getting Started](#getting-started)
+    - [Installation](#installation)
+
+    ## Getting Started
+
+    Take the following steps to get started.
+
+    ## Installation
+
+    To install from source, run the following command.
+
+
+    # Appendix
+
+    - [FAQ](#frequently-asked-questions)
+
+
+    ## Frequently Asked Questions
+
+    ### How to do a thing?
+
+    To do a thing, start by doing it.
+
