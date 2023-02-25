@@ -1,58 +1,142 @@
-# Syntax Reference
+# Syntax
 
-The **summary file** is the file you pass to stitchmd
-to generate your combined Markdown file.
-
-```bash
-stitchmd summary.md
-```
+Although the summary file is Markdown,
+stitchmd expects it in a very specific format.
 
 The summary file is comprised of one or more **sections**.
-Each section lists one or more Markdown files,
-using nested lists to define a hierarchy.
+Sections have a **section title** specified by a Markdown heading.
 
-For example:
-
-```markdown
-- [Getting Started](getting-started.md)
-    - [Installation](installation.md)
-- [Usage](usage.md)
-- [API](api.md)
-```
-
-If the summary file defines multiple sections,
-sections may specify **section headings**:
+<details>
+<summary>Example</summary>
 
 ```markdown
-# User Guide
+# Section 1
 
-- [Getting Started](getting-started.md)
-    - [Installation](installation.md)
-- [Usage](usage.md)
-- [API](api.md)
+<!-- contents of section 1 -->
 
-# Appendix
+# Section 2
 
-- [How things work](implementation.md)
-- [FAQ](faq.md)
+<!-- contents of section 2 -->
 ```
 
-If a section has a heading specified,
-headers for files included in that section
-will be offset by the level of that section.
+</details>
 
-In the example above,
-because "User Guide" is a level 1 header,
-"Getting Started" will be a level 2 header,
-and "Installation" will be a level 3 header.
+If there's only one section, the section title may be omitted.
 
-## Page titles
+```
+File = Section | (SectionTitle Section)+
+```
 
-The page title is determined by the following, in-order:
+Each section contains a Markdown list defining one or more **list items**.
+List items are one of the following,
+and may optionally have another list nested inside them
+to indicate a hierarchy.
 
-- If the page has a single level 1 heading,
-  that's the title for that page.
-- Otherwise, the link text specified in the table of contents
-  is the title for that page.
+- **Links** to local Markdown files:
+  These files will be included into the output,
+  with their contents adjusted to match their place.
 
-<!-- TODO: explain more -->
+    <details>
+    <summary>Example</summary>
+
+    ```markdown
+    - [Overview](overview.md)
+    - [Getting Started](start/install.md)
+    ```
+    </details>
+
+- **Plain text**:
+  These will become standalone headers in the output.
+  These **must** have a nested list.
+
+    <details>
+    <summary>Example</summary>
+
+    ```markdown
+    - Introduction
+        - [Overview](overview.md)
+        - [Getting Started](start/install.md)
+    ```
+    </details>
+
+
+Items listed in a section are rendered together under that section.
+A section is rendered in its entirety
+before the listing for the next section begins.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+# Section 1
+
+- [Item 1](item-1.md)
+- [Item 2](item-2.md)
+
+# Section 2
+
+- [Item 3](item-3.md)
+- [Item 4](item-4.md)
+```
+
+**Output**
+
+```markdown
+# Section 1
+
+- [Item 1](#item-1)
+- [Item 2](#item-2)
+
+## Item 1
+
+<!-- ... -->
+
+## Item 2
+
+<!-- ... -->
+
+# Section 2
+
+- [Item 3](#item-3)
+- [Item 4](#item-4)
+
+## Item 3
+
+<!-- ... -->
+
+## Item 4
+
+<!-- ... -->
+```
+
+</details>
+
+The heading level of a section determines the minimum heading level
+for included documents: one plus the section level.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+## User Guide
+
+- [Introduction](intro.md)
+```
+
+**Output**
+
+```markdown
+## User Guide
+
+- [Introduction](#introduction)
+
+### Introduction
+
+<!-- ... -->
+```
+
+</details>

@@ -1,18 +1,12 @@
 # Usage
 
-
-To use stitchmd, pass in with a Markdown file
-defining the layout of your combined file.
-This input file is referred to as the **summary file**,
-and is typically named "summary.md".
-
-```bash
-stitchmd summary.md
+```
+stitchmd [OPTIONS] FILE
 ```
 
-The table of contents in the summary file is a list of one or more **sections**,
-where each section defines an optional title,
-and a list of Markdown files specifying a hierarchy for that section.
+stitchmd accepts a single Markdown file as input.
+This file defines the layout you want in your combined document,
+and is referred to as the **summary file**.
 
 For example:
 
@@ -30,22 +24,15 @@ For example:
 - [FAQ](faq.md)
 ```
 
-Some things to note about the input format:
+> The format of the summary file is specified in more detail in [Syntax](syntax.md).
 
-- Section headers are optional.
-  If present, they determine the heading levels for the included files.
-- Each link in the list must specify a Markdown file.
-- List items may be nested to indicate a hierarchy.
-
-<!-- TODO: document syntax explicitly in a separate section. -->
-
-The output of stitchmd will be a single Markdown file with the
-contents of all the listed files inline,
-with their links rewritten to match their new location.
+Given such a file as input, stitchmd will print a single Markdown file
+including the contents of all listed files inline.
 
 <details>
+<summary>Example output</summary>
 
-For example, the output of the above input file
+The output of the input file above
 will be roughly in the following shape:
 
 ```markdown
@@ -88,3 +75,36 @@ will be roughly in the following shape:
 
 </details>
 
+## Options
+
+stitchmd supports the following options:
+
+- [`-o FILE`](#write-to-file)
+- [`-C DIR`](#change-the-directory)
+
+### Write to file
+
+stitchmd writes its output to stdout by default.
+Use the `-o` option to write to a file instead.
+
+```bash
+stitchmd -o README.md summary.md
+```
+
+### Change the directory
+
+Paths in the summary file are considered
+**relative to the summary file**.
+
+Use the `-C` flag to change the directory
+that stitchmd considers itself to be in.
+
+```bash
+stitchmd -C docs summary.md
+```
+
+This is especially useful if your summary file is passed via stdin.
+
+```bash
+... | stitchmd -C docs - # '-' asks it to read from stdin
+```
