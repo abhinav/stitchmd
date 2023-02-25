@@ -1,6 +1,7 @@
 package goldast
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,19 +46,23 @@ func TestWalk(t *testing.T) {
 	}
 }
 
-func TestWalkSkip(t *testing.T) {
+func TestWalk_error(t *testing.T) {
 	t.Parallel()
 
 	parser := goldmark.New().Parser()
 
+	giveErr := errors.New("great sadness")
 	f := Parse(parser, "foo.md", []byte("# Foo"))
 
 	var nodes []ast.Node
 	err := Walk(f.AST, func(n ast.Node) error {
+		if len(nodes) > 0 {
+			return giveErr
+		}
 		nodes = append(nodes, n)
-		return ErrSkip
+		return nil
 	})
-	require.NoError(t, err)
+	require.ErrorIs(t, err, giveErr)
 
 	require.Len(t, nodes, 1)
 	assert.IsType(t, new(ast.Document), nodes[0])
