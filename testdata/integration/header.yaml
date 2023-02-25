@@ -1,0 +1,67 @@
+- name: collision
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      # Foo
+
+      ## Setup
+
+      See also [setting up bar](bar.md#setup).
+    bar.md: |
+      # Bar
+
+      ## Setup
+
+      See also [setting up foo](foo.md#setup).
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    ## Setup
+
+    See also [setting up bar](#setup-1).
+
+    # Bar
+
+    ## Setup
+
+    See also [setting up foo](#setup).
+
+- name: local collision
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      # Foo
+
+      Taking over the Foo header.
+    bar.md: |
+      # Bar
+
+      See also [local foo](#foo)
+      and [external foo](foo.md#foo).
+
+      ## Foo
+
+      I collide with the other one.
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    Taking over the Foo header.
+
+    # Bar
+
+    See also [local foo](#foo-1)
+    and [external foo](#foo).
+
+    ## Foo
+
+    I collide with the other one.
