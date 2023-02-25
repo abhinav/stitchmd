@@ -75,19 +75,27 @@ func (cmd *mainCmd) run(opts *params) error {
 		input = f
 	}
 
-	// Default to file's directory if -C is not specified,
-	// and current directory if reading from stdin.
-	if opts.Dir == "" {
-		if len(opts.Input) > 0 {
-			opts.Dir = filepath.Dir(opts.Input)
-		} else {
-			var err error
-			opts.Dir, err = cmd.Getwd()
-			if err != nil {
-				return fmt.Errorf("get working directory: %w", err)
-			}
-		}
+	cwd, err := cmd.Getwd()
+	if err != nil {
+		return fmt.Errorf("get current directory: %w", err)
 	}
+	// Input and output directories are determined in the following order:
+	//
+	//  - -C flag takes precedence over everything
+	//  - If a file path is specified for input/output, use that directory
+	//  - Use current directory otherwise
+	determineDir := func(fpath string) string {
+		if opts.Dir != "" {
+			return opts.Dir
+		}
+		if fpath != "" {
+			return filepath.Dir(fpath)
+		}
+		return cwd
+	}
+
+	inputDir := determineDir(opts.Input)
+	outputDir := determineDir(opts.Output)
 
 	output := cmd.Stdout
 	if len(opts.Output) > 0 {
@@ -99,6 +107,14 @@ func (cmd *mainCmd) run(opts *params) error {
 		output = f
 	}
 
+	// Relative path from the output directory back to the input directory.
+	// This is used to generate relative links to images and other files
+	// that aren't part of the collection.
+	inputRel, err := filepath.Rel(outputDir, inputDir)
+	if err != nil {
+		return fmt.Errorf("get relative path: %w", err)
+	}
+
 	src, err := io.ReadAll(input)
 	if err != nil {
 		return fmt.Errorf("read input: %w", err)
@@ -108,7 +124,7 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	f := goldast.Parse(mdParser, filename, src)
 	coll, err := (&collector{
-		FS:     os.DirFS(opts.Dir),
+		FS:     os.DirFS(inputDir),
 		Parser: mdParser,
 		IDGen:  header.NewIDGen(),
 	}).Collect(f)
@@ -118,7 +134,8 @@ func (cmd *mainCmd) run(opts *params) error {
 	}
 
 	(&transformer{
-		Log: log,
+		Log:          log,
+		InputRelPath: inputRel,
 	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()

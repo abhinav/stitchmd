@@ -15,6 +15,8 @@ into one large Markdown file.
 It aims to make it easier to maintain large, ungainly Markdown files
 while still reaping the benefits of a single document where appropriate.
 
+![Flow diagram](doc/images/flow.png)
+
 With stitchmd, you pass in a Markdown file (the *summary file*)
 that defines a list of references to other Markdown files
 and get back a file with the combined contents of all specified files.

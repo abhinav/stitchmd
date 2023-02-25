@@ -102,3 +102,72 @@
     ## Setup
 
     See also [setting up foo](#setup).
+
+- name: out of scope file
+  give: |
+    - [foo](foo.md)
+  files:
+    foo.md: |
+      # Foo
+
+      See also [bar](bar.md).
+  want: |
+    - [foo](#foo)
+
+    # Foo
+
+    See also [bar](bar.md).
+
+- name: local image
+  give: |
+    - [foo](foo.md)
+  files:
+    foo.md: |
+      # Foo
+
+      ![graph](../static/graph.png)
+  want: |
+    - [foo](#foo)
+
+    # Foo
+
+    ![graph](../static/graph.png)
+
+- name: subdirectory
+  give: |
+    - [foo](bar/foo.md)
+  files:
+    bar/foo.md: |
+      # Foo
+
+      ![graph](static/graph.png)
+
+      See also [baz](baz/qux.md).
+  want: |
+    - [foo](#foo)
+
+    # Foo
+
+    ![graph](bar/static/graph.png)
+
+    See also [baz](bar/baz/qux.md).
+
+- name: different output directory
+  give: |
+    - [foo](in/foo.md)
+  outDir: out
+  files:
+    in/foo.md: |
+      # Foo
+
+      ![graph](../static/graph.png)
+
+      See also [baz](baz/qux.md).
+  want: |
+    - [foo](#foo)
+
+    # Foo
+
+    ![graph](../static/graph.png)
+
+    See also [baz](../in/baz/qux.md).
