@@ -39,6 +39,8 @@ func TestErrorList(t *testing.T) {
 
 	el := newErrorList(info, offsetOf)
 
+	assert.NoError(t, el.Err(), "empty error list")
+
 	foo := errors.New("foo")
 	bar := errors.New("bar")
 
@@ -54,16 +56,16 @@ func TestErrorList(t *testing.T) {
 	assert.ErrorIs(t, err, bar)
 }
 
-type fakeInfo func(int) Position
-
-func (f fakeInfo) Position(offset int) Position {
-	return f(offset)
-}
-
 func TestPosError(t *testing.T) {
 	wrapped := errors.New("great sadness")
 	posErr := &posError{Offset: 42, Err: wrapped}
 
 	assert.Equal(t, "great sadness", posErr.Error())
 	assert.ErrorIs(t, posErr, wrapped)
+}
+
+type fakeInfo func(int) Position
+
+func (f fakeInfo) Position(offset int) Position {
+	return f(offset)
 }
