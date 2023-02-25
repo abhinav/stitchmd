@@ -1,9 +1,10 @@
 # stitchmd
 
 - [Introduction](#introduction)
-- [Installation](#installation)
+  - [Installation](#installation)
 - [Usage](#usage)
-- [Syntax](#syntax-reference)
+  - [Syntax](#syntax)
+  - [Page Titles](#page-titles)
 - [License](#license)
 
 ## Introduction
@@ -11,39 +12,120 @@
 [![CI](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml/badge.svg)](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml)
 
 stitchmd is a tool that stitches together several Markdown files
-into one large Markdown file.
-It aims to make it easier to maintain large, ungainly Markdown files
-while still reaping the benefits of a single document where appropriate.
+into one large Markdown file,
+making it easier to maintain larger Markdown files.
+
+It lets you define the layout of your final document in a **summary file**,
+which it then uses to stitch and interlink other Markdown files with.
 
 ![Flow diagram](doc/images/flow.png)
 
-With stitchmd, you pass in a Markdown file (the *summary file*)
-that defines a list of references to other Markdown files
-and get back a file with the combined contents of all specified files.
-See [Usage](#usage) for a demonstration.
+See [Getting Started](doc/start.md) for a tutorial,
+or [Usage](#usage) to start using it.
 
 ### Features
 
 - **Cross-linking**:
-  stitchmd recognizes cross-links between input Markdown files
-  and automatically rewrites them into header links in the generated file.
-  This keeps your input files, as well as the output file
+  Recognizes cross-links between files and their headers
+  and re-targets them for their new locations.
+  This keeps your input and output files
   independently browsable on websites like GitHub.
-- **Header offsetting**:
-  stitchmd will adjust heading levels of included Markdown files
-  based on the hierarchy you specify in the summary file.
 
-## Installation
+    <details>
+    <summary>Example</summary>
+
+  **Input**
+
+  ```markdown
+  [Install](install.md) the program.
+  See also, [Overview](#overview).
+  ```
+
+  **Output**
+
+  ```markdown
+  [Install](#install) the program.
+  See also, [Overview](#overview).
+  ```
+
+    </details>
+
+- **Relative linking**:
+  Rewrites relative images and links to match their new location.
+
+    <details>
+    <summary>Example</summary>
+
+  **Input**
+
+  ```markdown
+  ![Graph](images/graph.png)
+  ```
+
+  **Output**
+
+  ```markdown
+  ![Graph](docs/images/graph.png)
+  ```
+
+    </details>
+
+- **Header offsetting**:
+  Adjusts levels of all headings in included Markdown files
+  based on the hierarchy in the summary file.
+
+    <details>
+    <summary>Example</summary>
+
+  **Input**
+
+  ```markdown
+  - [Introduction](intro.md)
+    - [Installation](install.md)
+  ```
+
+  **Output**
+
+  ```markdown
+  # Introduction
+
+  <!-- contents of intro.md -->
+
+  ## Installation
+
+  <!-- contents of install.md -->
+  ```
+
+    </details>
+
+### Use cases
+
+The following is a non-exhaustive list of use cases
+where stitchmd may come in handy.
+
+- Maintaining a document with several collaborators
+  with reduced risk of merge conflicts.
+- Divvying up a document between collaborators by ownership areas.
+  Owners will work inside the documents or directories assigned to them.
+- Keeping a single-page and multi-page version of the same content.
+- Re-using documentation across multiple Markdown documents.
+- Preparing initial drafts of long-form content
+  from an outline of smaller texts.
+
+...and more.
+(Feel free to contribute a PR with your use case.)
+
+### Installation
 
 You can install stitchmd from [pre-built binaries](#binary-installation)
 or [from source](#install-from-source).
 
-### Binary installation
+#### Binary installation
 
 Pre-built binaries of stitchmd are available for different platforms
 over a few different mediums.
 
-#### Homebrew
+##### Homebrew
 
 If you use **Homebrew** on macOS or Linux,
 run the following command to install stitchmd:
@@ -52,7 +134,7 @@ run the following command to install stitchmd:
 brew install abhinav/tap/stitchmd
 ```
 
-#### ArchLinux
+##### ArchLinux
 
 If you use **ArchLinux**,
 install stitchmd from [AUR](https://aur.archlinux.org/)
@@ -72,13 +154,13 @@ run the following command instead:
 yay -S stitchmd-bin
 ```
 
-#### GitHub Releases
+##### GitHub Releases
 
 For **other platforms**, download a pre-built binary from the
 [Releases page](https://github.com/abhinav/stitchmd/releases)
 and place it on your `$PATH`.
 
-### Install from source
+#### Install from source
 
 To install stitchmd from source, [install Go >= 1.20](https://go.dev/dl/)
 and run:
@@ -89,18 +171,13 @@ go install go.abhg.dev/stitchmd@latest
 
 ## Usage
 
-To use stitchmd, pass in with a Markdown file
-defining the layout of your combined file.
-This input file is referred to as the **summary file**,
-and is typically named "summary.md".
-
-```bash
-stitchmd summary.md
+```
+stitchmd [OPTIONS] FILE
 ```
 
-The table of contents in the summary file is a list of one or more **sections**,
-where each section defines an optional title,
-and a list of Markdown files specifying a hierarchy for that section.
+stitchmd accepts a single Markdown file as input.
+This file defines the layout you want in your combined document,
+and is referred to as the **summary file**.
 
 For example:
 
@@ -118,22 +195,15 @@ For example:
 - [FAQ](faq.md)
 ```
 
-Some things to note about the input format:
+> The format of the summary file is specified in more detail in [Syntax](#syntax).
 
-- Section headers are optional.
-  If present, they determine the heading levels for the included files.
-- Each link in the list must specify a Markdown file.
-- List items may be nested to indicate a hierarchy.
-
-<!-- TODO: document syntax explicitly in a separate section. -->
-
-The output of stitchmd will be a single Markdown file with the
-contents of all the listed files inline,
-with their links rewritten to match their new location.
+Given such a file as input, stitchmd will print a single Markdown file
+including the contents of all listed files inline.
 
 <details>
+<summary>Example output</summary>
 
-For example, the output of the above input file
+The output of the input file above
 will be roughly in the following shape:
 
 ```markdown
@@ -176,64 +246,249 @@ will be roughly in the following shape:
 
 </details>
 
-## Syntax Reference
+### Options
 
-The **summary file** is the file you pass to stitchmd
-to generate your combined Markdown file.
+stitchmd supports the following options:
+
+- [`-o FILE`](#write-to-file)
+- [`-C DIR`](#change-the-directory)
+
+#### Write to file
+
+stitchmd writes its output to stdout by default.
+Use the `-o` option to write to a file instead.
 
 ```bash
-stitchmd summary.md
+stitchmd -o README.md summary.md
 ```
+
+#### Change the directory
+
+Paths in the summary file are considered
+**relative to the summary file**.
+
+Use the `-C` flag to change the directory
+that stitchmd considers itself to be in.
+
+```bash
+stitchmd -C docs summary.md
+```
+
+This is especially useful if your summary file is passed via stdin.
+
+```bash
+... | stitchmd -C docs - # '-' asks it to read from stdin
+```
+
+### Syntax
+
+Although the summary file is Markdown,
+stitchmd expects it in a very specific format.
 
 The summary file is comprised of one or more **sections**.
-Each section lists one or more Markdown files,
-using nested lists to define a hierarchy.
+Sections have a **section title** specified by a Markdown heading.
 
-For example:
-
-```markdown
-- [Getting Started](getting-started.md)
-    - [Installation](installation.md)
-- [Usage](usage.md)
-- [API](api.md)
-```
-
-If the summary file defines multiple sections,
-sections may specify **section headings**:
+<details>
+<summary>Example</summary>
 
 ```markdown
-# User Guide
+# Section 1
 
-- [Getting Started](getting-started.md)
-    - [Installation](installation.md)
-- [Usage](usage.md)
-- [API](api.md)
+<!-- contents of section 1 -->
 
-# Appendix
+# Section 2
 
-- [How things work](implementation.md)
-- [FAQ](faq.md)
+<!-- contents of section 2 -->
 ```
 
-If a section has a heading specified,
-headers for files included in that section
-will be offset by the level of that section.
+</details>
 
-In the example above,
-because "User Guide" is a level 1 header,
-"Getting Started" will be a level 2 header,
-and "Installation" will be a level 3 header.
+If there's only one section, the section title may be omitted.
 
-### Page titles
+```
+File = Section | (SectionTitle Section)+
+```
 
-The page title is determined by the following, in-order:
+Each section contains a Markdown list defining one or more **list items**.
+List items are one of the following,
+and may optionally have another list nested inside them
+to indicate a hierarchy.
 
-- If the page has a single level 1 heading,
-  that's the title for that page.
-- Otherwise, the link text specified in the table of contents
-  is the title for that page.
+- **Links** to local Markdown files:
+  These files will be included into the output,
+  with their contents adjusted to match their place.
 
-<!-- TODO: explain more -->
+    <details>
+    <summary>Example</summary>
+
+  ```markdown
+  - [Overview](overview.md)
+  - [Getting Started](start/install.md)
+  ```
+    </details>
+
+- **Plain text**:
+  These will become standalone headers in the output.
+  These **must** have a nested list.
+
+    <details>
+    <summary>Example</summary>
+
+  ```markdown
+  - Introduction
+      - [Overview](overview.md)
+      - [Getting Started](start/install.md)
+  ```
+    </details>
+
+Items listed in a section are rendered together under that section.
+A section is rendered in its entirety
+before the listing for the next section begins.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+# Section 1
+
+- [Item 1](item-1.md)
+- [Item 2](item-2.md)
+
+# Section 2
+
+- [Item 3](item-3.md)
+- [Item 4](item-4.md)
+```
+
+**Output**
+
+```markdown
+# Section 1
+
+- [Item 1](#item-1)
+- [Item 2](#item-2)
+
+## Item 1
+
+<!-- ... -->
+
+## Item 2
+
+<!-- ... -->
+
+# Section 2
+
+- [Item 3](#item-3)
+- [Item 4](#item-4)
+
+## Item 3
+
+<!-- ... -->
+
+## Item 4
+
+<!-- ... -->
+```
+
+</details>
+
+The heading level of a section determines the minimum heading level
+for included documents: one plus the section level.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+## User Guide
+
+- [Introduction](intro.md)
+```
+
+**Output**
+
+```markdown
+## User Guide
+
+- [Introduction](#introduction)
+
+### Introduction
+
+<!-- ... -->
+```
+
+</details>
+
+### Page Titles
+
+All pages included with stitchmd are assigned a title.
+
+By default, the title is the name of the item in the summary.
+For example, given the following:
+
+```markdown
+<!-- summary.md -->
+- [Introduction](intro.md)
+
+<!-- intro.md -->
+Welcome to Foo.
+```
+
+The title for `intro.md` is `"Introduction"`.
+
+<details>
+<summary>Output</summary>
+
+```markdown
+- [Introduction](#introduction)
+
+# Introduction
+
+Welcome to Foo.
+```
+
+</details>
+
+A file may specify its own title by adding a heading
+that meets the following rules:
+
+- it's a level 1 heading
+- it's the first item in the file
+- there are no other level 1 headings in the file
+
+If a file specifies its own title,
+this does **not** affect its name in the summary list.
+This allows the use of short link titles for long headings.
+
+For example, given the following:
+
+```markdown
+<!-- summary.md -->
+- [Introduction](intro.md)
+
+<!-- intro.md -->
+# Introduction to Foo
+
+Welcome to Foo.
+```
+
+The title for `intro.md` will be `"Introduction to Foo"`.
+
+<details>
+<summary>Output</summary>
+
+```markdown
+- [Introduction](#introduction-to-foo)
+
+# Introduction to Foo
+
+Welcome to Foo.
+```
+
+</details>
 
 ## License
 

@@ -110,9 +110,21 @@ func (cmd *mainCmd) run(opts *params) error {
 	// Relative path from the output directory back to the input directory.
 	// This is used to generate relative links to images and other files
 	// that aren't part of the collection.
-	inputRel, err := filepath.Rel(outputDir, inputDir)
-	if err != nil {
-		return fmt.Errorf("get relative path: %w", err)
+	var inputRel string
+	{
+		outAbs, err := filepath.Abs(outputDir)
+		if err != nil {
+			return err
+		}
+		inAbs, err := filepath.Abs(inputDir)
+		if err != nil {
+			return err
+		}
+
+		inputRel, err = filepath.Rel(outAbs, inAbs)
+		if err != nil {
+			return err
+		}
 	}
 
 	src, err := io.ReadAll(input)
