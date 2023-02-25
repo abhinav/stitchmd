@@ -147,7 +147,7 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	(&transformer{
 		Log:          log,
-		InputRelPath: inputRel,
+		InputRelPath: filepath.ToSlash(inputRel),
 	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()

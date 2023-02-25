@@ -27,6 +27,7 @@ type markdownCollection struct {
 	Sections []*markdownSection
 
 	// FilesByPath maps a Markdown file path to its parsed representation.
+	// The path is /-separated, regardless of the OS.
 	FilesByPath map[string]*markdownFileItem
 }
 
@@ -108,7 +109,7 @@ func (c *collector) collectItem(item stitch.Item) (markdownItem, error) {
 }
 
 type markdownFileItem struct {
-	// Path is the path to the Markdown file.
+	// Path is the /-separated path to the Markdown file.
 	Path string
 
 	// Item is the original link in the TOC

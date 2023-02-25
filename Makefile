@@ -32,7 +32,10 @@ GO_MOD_FILES = \
 
 
 .PHONY: all
-all: lint test
+all: lint build test
+
+.PHONY: build
+build: $(STITCHMD)
 
 .PHONY: lint
 lint: fmtcheck tidycheck staticcheck readmecheck revive

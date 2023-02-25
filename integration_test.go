@@ -59,8 +59,9 @@ func TestIntegration(t *testing.T) {
 
 			output := filepath.Join(dir, "output.md")
 			if tt.OutDir != "" {
-				require.NoError(t, os.MkdirAll(filepath.Join(dir, tt.OutDir), 0o755))
-				output = filepath.Join(dir, tt.OutDir, "output.md")
+				outDir := filepath.FromSlash(tt.OutDir)
+				require.NoError(t, os.MkdirAll(filepath.Join(dir, outDir), 0o755))
+				output = filepath.Join(dir, outDir, "output.md")
 			}
 
 			for filename, content := range tt.Files {
@@ -70,6 +71,13 @@ func TestIntegration(t *testing.T) {
 			}
 
 			var stdout, stderr bytes.Buffer
+			defer func() {
+				if t.Failed() {
+					t.Logf("stdout:\n%s", stdout.String())
+					t.Logf("stderr:\n%s", stderr.String())
+				}
+			}()
+
 			cmd := mainCmd{
 				Stdin:  new(bytes.Buffer),
 				Stdout: &stdout,

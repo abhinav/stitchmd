@@ -1,6 +1,8 @@
 package stitch
 
 import (
+	"path/filepath"
+
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/tree"
@@ -130,6 +132,7 @@ type LinkItem struct {
 
 	// Target is the destination of this item.
 	// This is the text inside the "(..)" section of the link.
+	// It's /-separated, even on Windows.
 	Target string
 
 	// Depth is the depth of the item in the table of contents.
@@ -143,7 +146,7 @@ type LinkItem struct {
 func (p *itemTreeParser) parseLinkItem(link *ast.Link) *LinkItem {
 	return &LinkItem{
 		Text:   string(link.Text(p.src)),
-		Target: string(link.Destination),
+		Target: filepath.ToSlash(string(link.Destination)),
 		Depth:  p.depth,
 		AST:    link,
 	}

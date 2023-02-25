@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/url"
 	"path"
-	"path/filepath"
 
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/stitchmd/internal/goldast"
@@ -14,7 +13,7 @@ import (
 type transformer struct {
 	Log *log.Logger
 
-	// Relative path to the input directory
+	// /-separated relative path to the input directory
 	// from wherever the output is going.
 	InputRelPath string
 
@@ -69,13 +68,13 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 
 	t.transformLink(".", f, f.Item.AST)
 
-	dir := filepath.Dir(f.Path)
+	fromPath := path.Dir(f.Path)
 	for _, l := range f.Links {
-		t.transformLink(dir, f, l)
+		t.transformLink(fromPath, f, l)
 	}
 
 	for _, i := range f.Images {
-		t.transformImage(dir, f, i)
+		t.transformImage(fromPath, f, i)
 	}
 
 	doc := f.File.AST
@@ -86,15 +85,15 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 	}
 }
 
-func (t *transformer) transformLink(fromDir string, f *markdownFileItem, link *ast.Link) {
-	link.Destination = []byte(t.transformURL(fromDir, f, string(link.Destination)))
+func (t *transformer) transformLink(fromPath string, f *markdownFileItem, link *ast.Link) {
+	link.Destination = []byte(t.transformURL(fromPath, f, string(link.Destination)))
 }
 
-func (t *transformer) transformImage(fromDir string, f *markdownFileItem, image *ast.Image) {
-	image.Destination = []byte(t.transformURL(fromDir, f, string(image.Destination)))
+func (t *transformer) transformImage(fromPath string, f *markdownFileItem, image *ast.Image) {
+	image.Destination = []byte(t.transformURL(fromPath, f, string(image.Destination)))
 }
 
-func (t *transformer) transformURL(fromDir string, f *markdownFileItem, toURL string) string {
+func (t *transformer) transformURL(fromPath string, f *markdownFileItem, toURL string) string {
 	u, err := url.Parse(toURL)
 	if err != nil || u.Scheme != "" || u.Host != "" {
 		return toURL
@@ -103,7 +102,7 @@ func (t *transformer) transformURL(fromDir string, f *markdownFileItem, toURL st
 	// Resolve the Path component of the URL to the destination file.
 	to := f
 	if u.Path != "" {
-		dst := filepath.Join(fromDir, u.Path)
+		dst := path.Join(fromPath, u.Path)
 		var ok bool
 		to, ok = t.filesByPath[dst]
 		if !ok {
@@ -111,7 +110,7 @@ func (t *transformer) transformURL(fromDir string, f *markdownFileItem, toURL st
 			// file in the collection.
 			// It may be a link to a file in the input directory.
 			// Update the path and leave everything else as-is.
-			u.Path = path.Join(filepath.ToSlash(t.InputRelPath), dst)
+			u.Path = path.Join(t.InputRelPath, dst)
 			return u.String()
 		}
 		u.Path = ""
