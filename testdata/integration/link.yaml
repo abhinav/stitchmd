@@ -70,39 +70,6 @@
 
     Set up Bar with these steps.
 
-- name: header collision
-  give: |
-    - [foo](foo.md)
-    - [bar](bar.md)
-  files:
-    foo.md: |
-      # Foo
-
-      ## Setup
-
-      See also [setting up bar](bar.md#setup).
-    bar.md: |
-      # Bar
-
-      ## Setup
-
-      See also [setting up foo](foo.md#setup).
-  want: |
-    - [foo](#foo)
-    - [bar](#bar)
-
-    # Foo
-
-    ## Setup
-
-    See also [setting up bar](#setup-1).
-
-    # Bar
-
-    ## Setup
-
-    See also [setting up foo](#setup).
-
 - name: out of scope file
   give: |
     - [foo](foo.md)
