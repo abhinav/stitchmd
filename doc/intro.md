@@ -1,6 +1,7 @@
 # Introduction
 
 [![CI](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml/badge.svg)](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/abhinav/stitchmd/branch/main/graph/badge.svg?token=MBOK2PHS0X)](https://codecov.io/gh/abhinav/stitchmd)
 
 stitchmd is a tool that stitches together several Markdown files
 into one large Markdown file,
