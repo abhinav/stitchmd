@@ -2,7 +2,6 @@ package stitch
 
 import (
 	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
@@ -86,7 +85,7 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 		return
 	}
 
-	combineTextNodes(n)
+	goldast.CombineAdjacentTexts(n, p.src)
 	switch count := n.ChildCount(); count {
 	case 0:
 		p.errs.Pushf(n, "list item is empty")
@@ -192,37 +191,4 @@ func (*TextItem) item() {}
 // that this item was parsed from.
 func (i *TextItem) Node() ast.Node {
 	return i.AST
-}
-
-// combineTextNodes combines adjacent text child nodes of the given node
-// into a single text node.
-//
-// This is necessary because sometimes,
-// the parser will split text in a text block into multiple nodes.
-func combineTextNodes(n ast.Node) {
-	// TODO: Maybe this should be a transformer on the Goldmark parser.
-	if n.ChildCount() <= 1 {
-		return
-	}
-
-	var (
-		idx int
-		seg text.Segment
-	)
-	for ch := n.FirstChild(); ch != nil; ch = ch.NextSibling() {
-		if ch.Kind() != ast.KindText {
-			return
-		}
-		if idx == 0 {
-			seg.Start = ch.(*ast.Text).Segment.Start
-		}
-		seg.Stop = ch.(*ast.Text).Segment.Stop
-		idx++
-	}
-
-	newch := ast.NewTextSegment(seg)
-	for n.ChildCount() > 0 {
-		n.RemoveChild(n, n.FirstChild())
-	}
-	n.AppendChild(n, newch)
 }
