@@ -492,4 +492,4 @@ Welcome to Foo.
 
 ## License
 
-This software is licensed under the MIT license.
+This software is made available under the MIT license.
