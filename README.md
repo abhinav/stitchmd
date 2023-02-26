@@ -4,6 +4,7 @@
   - [Getting Started](#getting-started)
   - [Installation](#installation)
 - [Usage](#usage)
+  - [Options](#options)
   - [Syntax](#syntax)
   - [Page Titles](#page-titles)
 - [License](#license)
