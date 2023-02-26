@@ -9,7 +9,7 @@ export GOBIN ?= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/bin
 export PATH := $(GOBIN):$(PATH)
 
 MODULES ?= . ./tools
-TEST_FLAGS ?= -v -race
+TEST_FLAGS ?= -race
 
 STATICCHECK = bin/staticcheck
 REVIVE = bin/revive

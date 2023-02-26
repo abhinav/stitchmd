@@ -15,7 +15,7 @@ import (
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
 	"go.abhg.dev/stitchmd/internal/goldast"
-	"go.abhg.dev/stitchmd/internal/header"
+	"go.abhg.dev/stitchmd/internal/stitch"
 )
 
 var _version = "dev"
@@ -99,6 +99,11 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	output := cmd.Stdout
 	if len(opts.Output) > 0 {
+		outDir := filepath.Dir(opts.Output)
+		if err := os.MkdirAll(outDir, 0o755); err != nil {
+			return fmt.Errorf("create output directory: %w", err)
+		}
+
 		f, err := os.Create(opts.Output)
 		if err != nil {
 			return fmt.Errorf("create output: %w", err)
@@ -135,11 +140,16 @@ func (cmd *mainCmd) run(opts *params) error {
 	mdParser := goldast.DefaultParser()
 
 	f := goldast.Parse(mdParser, filename, src)
+	summary, err := stitch.ParseSummary(f)
+	if err != nil {
+		log.Println(err)
+		return errors.New("error parsing summary")
+	}
+
 	coll, err := (&collector{
 		FS:     os.DirFS(inputDir),
 		Parser: mdParser,
-		IDGen:  header.NewIDGen(),
-	}).Collect(f)
+	}).Collect(f.Info, summary)
 	if err != nil {
 		log.Println(err)
 		return errors.New("error reading markdown")
@@ -160,5 +170,5 @@ func (cmd *mainCmd) run(opts *params) error {
 		Renderer: render,
 		Log:      log,
 	}
-	return g.Generate(coll)
+	return g.Generate(f.Source, coll)
 }

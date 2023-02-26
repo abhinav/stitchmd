@@ -28,6 +28,13 @@ func (p Position) String() string {
 	return string(bs)
 }
 
+// Positioner reports the position of a given offset in a file.
+type Positioner interface {
+	Position(offset int) Position
+}
+
+var _ Positioner = (*Info)(nil)
+
 // Info holds richer position information.
 // It can be used to convert a Pos to a human-readable Position.
 type Info struct {

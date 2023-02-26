@@ -11,9 +11,7 @@ import (
 // ErrorList tracks errors associated with positions of ast.Nodes in a
 // document.
 type ErrorList struct {
-	info interface {
-		Position(int) Position
-	}
+	info Positioner
 	errs []*posError
 
 	// Reports the position of the given node.
@@ -23,14 +21,11 @@ type ErrorList struct {
 
 // NewErrorList builds an ErrorList
 // that uses the provided [pos.Info] to report positions.
-func NewErrorList(info *Info) *ErrorList {
+func NewErrorList(info Positioner) *ErrorList {
 	return newErrorList(info, OffsetOf)
 }
 
-func newErrorList(
-	info interface{ Position(int) Position },
-	offsetOf func(ast.Node) int,
-) *ErrorList {
+func newErrorList(info Positioner, offsetOf func(ast.Node) int) *ErrorList {
 	return &ErrorList{info: info, offsetOf: offsetOf}
 }
 
