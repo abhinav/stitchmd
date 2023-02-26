@@ -22,8 +22,8 @@ func TestIntegration(t *testing.T) {
 		Files map[string]string `yaml:"files"`
 		Want  string            `yaml:"want"`
 
-		// Heading offset.
-		Offset int `yaml:"offset"`
+		Offset int  `yaml:"offset"` // -offset
+		NoTOC  bool `yaml:"no-toc"` // -no-toc
 
 		// Path to the output directory,
 		// relative to the test directory.
@@ -93,6 +93,7 @@ func TestIntegration(t *testing.T) {
 				Input:  input,
 				Output: output,
 				Offset: tt.Offset,
+				NoTOC:  tt.NoTOC,
 			}))
 
 			got, err := os.ReadFile(output)

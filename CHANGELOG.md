@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `-offset N` flag to offset all headings by a fixed amount
   (positive or negative).
+- `-no-toc` flag to stop the table of contents from being rendered
+  in the output.
 
 ### Changed
 - `-o` now creates the output directory if it does not exist.

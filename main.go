@@ -170,6 +170,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		W:        output,
 		Renderer: render,
 		Log:      log,
+		NoTOC:    opts.NoTOC,
 	}
 	return g.Generate(f.Source, coll)
 }
