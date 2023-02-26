@@ -377,6 +377,15 @@ stitchmd supports the following options:
 - [`-o FILE`](#write-to-file)
 - [`-C DIR`](#change-the-directory)
 
+#### Read from stdin
+
+Instead of reading from a specific file on-disk,
+you can pass in '-' as the file name to read the summary from stdin.
+
+```bash
+cat summary.md | stitchmd -
+```
+
 #### Write to file
 
 stitchmd writes its output to stdout by default.
@@ -401,8 +410,10 @@ stitchmd -C docs summary.md
 This is especially useful if your summary file is passed via stdin.
 
 ```bash
-... | stitchmd -C docs - # '-' asks it to read from stdin
+... | stitchmd -C docs -
 ```
+
+The `-` above tells stitchmd to [read from stdin](#read-from-stdin).
 
 ### Syntax
 
