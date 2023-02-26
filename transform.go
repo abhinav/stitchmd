@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/yuin/goldmark/ast"
+	"go.abhg.dev/stitchmd/internal/stitch"
 )
 
 type transformer struct {
@@ -45,7 +46,7 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformGroup(group *markdownGroupItem) {
-	group.Heading.AST.Level += group.Item.Depth + t.sectionLevel
+	t.transformHeading(group.Item, group.Heading.AST)
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
 	item := group.Item.AST
@@ -60,7 +61,7 @@ func (t *transformer) transformGroup(group *markdownGroupItem) {
 
 func (t *transformer) transformFile(f *markdownFileItem) {
 	for _, h := range f.Headings {
-		h.AST.Level += f.Item.Depth + t.sectionLevel
+		t.transformHeading(f.Item, h.AST)
 	}
 
 	t.transformLink(".", f, f.Item.AST)
@@ -80,6 +81,10 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 	} else {
 		doc.AppendChild(doc, f.Title.AST)
 	}
+}
+
+func (t *transformer) transformHeading(item stitch.Item, h *ast.Heading) {
+	h.Level += item.ItemDepth() + t.sectionLevel
 }
 
 func (t *transformer) transformLink(fromPath string, f *markdownFileItem, link *ast.Link) {
