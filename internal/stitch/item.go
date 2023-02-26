@@ -13,6 +13,7 @@ import (
 type Item interface {
 	item() // seals the interface
 
+	ItemDepth() int
 	Node() ast.Node
 }
 
@@ -154,6 +155,11 @@ func (p *itemTreeParser) parseLinkItem(link *ast.Link) *LinkItem {
 
 func (*LinkItem) item() {}
 
+// ItemDepth reports the depth of the item in the table of contents.
+func (i *LinkItem) ItemDepth() int {
+	return i.Depth
+}
+
 // Node reports the underlying AST node
 // that this item was parsed from.
 func (i *LinkItem) Node() ast.Node {
@@ -189,6 +195,11 @@ func (p *itemTreeParser) parseTextItem(text *ast.Text, hasChildren bool) *TextIt
 }
 
 func (*TextItem) item() {}
+
+// ItemDepth reports the depth of the item in the table of contents.
+func (i *TextItem) ItemDepth() int {
+	return i.Depth
+}
 
 // Node reports the underlying AST node
 // that this item was parsed from.
