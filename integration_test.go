@@ -22,6 +22,9 @@ func TestIntegration(t *testing.T) {
 		Files map[string]string `yaml:"files"`
 		Want  string            `yaml:"want"`
 
+		// Heading offset.
+		Offset int `yaml:"offset"`
+
 		// Path to the output directory,
 		// relative to the test directory.
 		OutDir string `yaml:"outDir"`
@@ -89,6 +92,7 @@ func TestIntegration(t *testing.T) {
 			require.NoError(t, cmd.run(&params{
 				Input:  input,
 				Output: output,
+				Offset: tt.Offset,
 			}))
 
 			got, err := os.ReadFile(output)

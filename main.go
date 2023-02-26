@@ -157,6 +157,7 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	(&transformer{
 		Log:          log,
+		Offset:       opts.Offset,
 		InputRelPath: filepath.ToSlash(inputRel),
 	}).Transform(coll)
 

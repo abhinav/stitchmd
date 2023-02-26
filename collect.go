@@ -52,13 +52,6 @@ type markdownSection struct {
 	Items    tree.List[markdownItem]
 }
 
-func (s *markdownSection) TitleLevel() int {
-	if s.Title != nil {
-		return s.Title.Level
-	}
-	return 0
-}
-
 func (c *collector) collectSection(errs *goldast.ErrorList, sec *stitch.Section) *markdownSection {
 	items := tree.TransformList(sec.Items, func(item stitch.Item) markdownItem {
 		i, err := c.collectItem(item)

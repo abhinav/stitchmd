@@ -1,0 +1,108 @@
+- name: positive
+  offset: 2
+  give: |
+    # Foo
+
+    - [Bar](bar.md)
+  files:
+    bar.md: |
+      # Bar
+
+      ## Baz
+  want: |
+    ### Foo
+
+    - [Bar](#bar)
+
+    #### Bar
+
+    ##### Baz
+
+- name: positive/no section title
+  offset: 2
+  give: |
+    - [Foo](foo.md)
+  files:
+    foo.md: |
+      # Foo
+
+      ## Bar
+  want: |
+    - [Foo](#foo)
+
+    ### Foo
+
+    #### Bar
+
+- name: negative
+  offset: -2
+  give: |
+    # Unchanged
+
+    - [Bar](bar.md)
+  files:
+    bar.md: |
+      # Bar
+
+      ## Baz
+
+      ### Qux
+  want: |
+    # Unchanged
+
+    - [Bar](#bar)
+
+    # Bar
+
+    # Baz
+
+    ## Qux
+
+- name: negative/section title
+  offset: -2
+  give: |
+    #### Foo
+
+    - Bar
+      - Baz
+        - [Qux](qux.md)
+  files:
+    qux.md: "# Qux"
+  want: |
+    ## Foo
+
+    - [Bar](#bar)
+      - [Baz](#baz)
+        - [Qux](#qux)
+
+    ### Bar
+
+    #### Baz
+
+    ##### Qux
+
+- name: negative/no section
+  offset: -1
+  give: |
+    - Foo
+      - [Bar](bar.md)
+  files:
+    bar.md: |
+      # A
+
+      # B
+
+      # C
+  want: |
+    - [Foo](#foo)
+      - [Bar](#bar)
+
+    # Foo
+
+    # Bar
+
+    ## A
+
+    ## B
+
+    ## C
