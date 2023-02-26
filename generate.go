@@ -14,6 +14,7 @@ type generator struct {
 	W        io.Writer
 	Renderer *mdfmt.Renderer
 	Log      *log.Logger
+	NoTOC    bool
 }
 
 func (g *generator) Generate(src []byte, coll *markdownCollection) error {
@@ -29,16 +30,24 @@ func (g *generator) Generate(src []byte, coll *markdownCollection) error {
 }
 
 func (g *generator) renderSection(src []byte, sec *markdownSection) error {
+	empty := true
 	if t := sec.Title; t != nil {
+		empty = false
 		if err := g.Renderer.Render(g.W, src, t); err != nil {
 			return err
 		}
 	}
 
-	if err := g.Renderer.Render(g.W, src, sec.TOCItems); err != nil {
-		return err
+	if !g.NoTOC {
+		empty = false
+		if err := g.Renderer.Render(g.W, src, sec.TOCItems); err != nil {
+			return err
+		}
 	}
-	io.WriteString(g.W, "\n\n")
+
+	if !empty {
+		io.WriteString(g.W, "\n\n")
+	}
 	return nil
 }
 

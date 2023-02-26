@@ -21,6 +21,7 @@ type params struct {
 	Output string // defaults to stdout
 	Dir    string
 	Offset int
+	NoTOC  bool
 }
 
 // cliParser parses command line arguments.
@@ -43,6 +44,7 @@ func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
 	flag.StringVar(&opts.Output, "o", "", "")
 	flag.StringVar(&opts.Dir, "C", "", "")
 	flag.IntVar(&opts.Offset, "offset", 0, "")
+	flag.BoolVar(&opts.NoTOC, "no-toc", false, "")
 
 	flag.BoolVar(&p.version, "version", false, "")
 	flag.BoolVar(&p.help, "help", false, "")

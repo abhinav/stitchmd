@@ -9,6 +9,8 @@ OPTIONS
   -offset N
 	base offset for heading levels.
 	May be negative to increase heading levels.
+  -no-toc
+	don't generate a table of contents under each section.
   -o FILE
 	write output to FILE instead of stdout.
   -C DIR

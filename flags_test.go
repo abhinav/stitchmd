@@ -79,6 +79,21 @@ func TestCLIParser_Parse(t *testing.T) {
 			want: params{Offset: -2, Input: "bar"},
 		},
 		{
+			desc: "no-toc",
+			args: []string{"-no-toc", "bar"},
+			want: params{NoTOC: true, Input: "bar"},
+		},
+		{
+			desc: "no-toc/explicit true",
+			args: []string{"-no-toc=true", "bar"},
+			want: params{NoTOC: true, Input: "bar"},
+		},
+		{
+			desc: "no-toc/explicit false",
+			args: []string{"-no-toc=false", "bar"},
+			want: params{NoTOC: false, Input: "bar"},
+		},
+		{
 			desc:    "too many args",
 			args:    []string{"-o", "foo", "bar", "baz"},
 			wantErr: "unexpected arguments:",

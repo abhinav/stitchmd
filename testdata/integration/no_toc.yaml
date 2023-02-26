@@ -1,0 +1,80 @@
+- name: single
+  no-toc: true
+  give: |
+    # Foo
+
+    - [Bar](bar.md)
+      - [Baz](baz.md)
+    - [Qux](qux.md)
+  files:
+    bar.md: "# Bar"
+    baz.md: "# Baz"
+    qux.md: "# Qux"
+  want: |
+    # Foo
+
+    ## Bar
+
+    ### Baz
+
+    ## Qux
+
+- name: auto-header
+  no-toc: true
+  give: |
+    # Foo
+
+    - [Bar](bar.md)
+      - [Baz](baz.md)
+    - [Qux](qux.md)
+  files:
+    bar.md: "bar"
+    baz.md: "baz"
+    qux.md: "qux"
+  want: |
+    # Foo
+
+    ## Bar
+
+    bar
+
+    ### Baz
+
+    baz
+
+    ## Qux
+
+    qux
+
+- name: no section title
+  no-toc: true
+  give: |
+    - [Bar](bar.md)
+      - [Baz](baz.md)
+    - [Qux](qux.md)
+  files:
+    bar.md: "# Bar"
+    baz.md: "# Baz"
+    qux.md: "# Qux"
+  want: |
+    # Bar
+
+    ## Baz
+
+    # Qux
+
+- name: group header
+  no-toc: true
+  give: |
+    - Bar
+      - [Baz](baz.md)
+      - [Qux](qux.md)
+  files:
+    baz.md: "# Baz"
+    qux.md: "# Qux"
+  want: |
+    # Bar
+
+    ## Baz
+
+    ## Qux

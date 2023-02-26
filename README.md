@@ -376,6 +376,7 @@ will be roughly in the following shape:
 stitchmd supports the following options:
 
 - [`-offset N`](#offset-heading-levels)
+- [`-no-toc`](#disable-the-toc)
 - [`-o FILE`](#write-to-file)
 - [`-C DIR`](#change-the-directory)
 
@@ -471,6 +472,49 @@ stitchmd -offset -1 summary.md
 ## Installation
 
 <!-- ... -->
+```
+
+</details>
+
+#### Disable the TOC
+
+```
+-no-toc
+```
+
+stitchmd reproduces the original table of contents in the output.
+You can change this with the `-no-toc` flag.
+
+```bash
+stitchmd -no-toc summary.md
+```
+
+This will omit the item listing under each section.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+- [Introduction](intro.md)
+- [Installation](install.md)
+```
+
+```bash
+stitchmd -no-toc summary.md
+```
+
+**Output**
+
+```markdown
+# Introduction
+
+<!-- .. -->
+
+# Installation
+
+<!-- .. -->
 ```
 
 </details>
