@@ -17,30 +17,96 @@ cat summary.md | stitchmd -
 
 ## Offset heading levels
 
+```bash
+-offset N
+```
+
 stitchmd changes heading levels based on a few factors:
 
 - level of the section heading
 - position of the file in the hierarchy of that section
 - the file's own title heading
 
-The `-offset` flag allows you to offset all these headings.
+The `-offset` flag allows you to offset all these headings
+by a fixed value.
 
-For example, the following will push all headings one level down,
-so what would normally be level 3 will now be level 4.
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+# User Guide
+
+- [Introduction](intro.md)
+  - [Installation](install.md)
+```
 
 ```bash
 stitchmd -offset 1 summary.md
 ```
 
-This number may be negative to reduce heading levels.
-For example, the following will turn
-what would normally be a level 3 heading into a level 2 heading.
+**Output**
+
+```markdown
+## User Guide
+
+- [Introduction](#introduction)
+  - [Installation](#installation)
+
+### Introduction
+
+<!-- ... -->
+
+### Installation
+
+<!-- ... -->
+```
+
+</details>
+
+Use a negative value to reduce heading levels.
+
+<details>
+<summary>Example</summary>
+
+**Input**
+
+```markdown
+# User Guide
+
+- [Introduction](intro.md)
+  - [Installation](install.md)
+```
 
 ```bash
 stitchmd -offset -1 summary.md
 ```
 
+**Output**
+
+```markdown
+# User Guide
+
+- [Introduction](#introduction)
+  - [Installation](#installation)
+
+# Introduction
+
+<!-- ... -->
+
+## Installation
+
+<!-- ... -->
+```
+
+</details>
+
 ## Write to file
+
+```
+-o FILE
+```
 
 stitchmd writes its output to stdout by default.
 Use the `-o` option to write to a file instead.
@@ -50,6 +116,10 @@ stitchmd -o README.md summary.md
 ```
 
 ## Change the directory
+
+```
+-C DIR
+```
 
 Paths in the summary file are considered
 **relative to the summary file**.
@@ -61,10 +131,9 @@ that stitchmd considers itself to be in.
 stitchmd -C docs summary.md
 ```
 
-This is especially useful if your summary file is passed via stdin.
+This is especially useful if your summary file is
+[passed via stdin](#read-from-stdin)
 
 ```bash
 ... | stitchmd -C docs -
 ```
-
-The `-` above tells stitchmd to [read from stdin](#read-from-stdin).
