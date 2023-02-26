@@ -17,8 +17,11 @@ type transformer struct {
 	// from wherever the output is going.
 	InputRelPath string
 
-	// Level of the current section's header, if any.
-	sectionLevel int
+	// Flat heading offset for all headings.
+	Offset int
+
+	// Heading offset for the current section.
+	sectionOffset int
 
 	filesByPath map[string]*markdownFileItem
 }
@@ -26,7 +29,17 @@ type transformer struct {
 func (t *transformer) Transform(coll *markdownCollection) {
 	t.filesByPath = coll.FilesByPath
 	for _, sec := range coll.Sections {
-		t.sectionLevel = sec.TitleLevel()
+		offset := t.Offset
+		if t := sec.Title; t != nil {
+			offset += t.Level
+
+			t.Level = offset
+			if t.Level < 1 {
+				t.Level = 1
+			}
+		}
+		t.sectionOffset = offset
+
 		sec.Items.Walk(func(item markdownItem) error {
 			t.transformItem(item)
 			return nil
@@ -84,7 +97,10 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 }
 
 func (t *transformer) transformHeading(item stitch.Item, h *ast.Heading) {
-	h.Level += item.ItemDepth() + t.sectionLevel
+	h.Level += item.ItemDepth() + t.sectionOffset
+	if h.Level < 1 {
+		h.Level = 1
+	}
 }
 
 func (t *transformer) transformLink(fromPath string, f *markdownFileItem, link *ast.Link) {

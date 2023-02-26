@@ -6,6 +6,9 @@ Reads from stdin if FILE is '-'.
 
 OPTIONS
 
+  -offset N
+	base offset for heading levels.
+	May be negative to increase heading levels.
   -o FILE
 	write output to FILE instead of stdout.
   -C DIR

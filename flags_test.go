@@ -69,6 +69,16 @@ func TestCLIParser_Parse(t *testing.T) {
 			want: params{Output: "", Input: "bar"},
 		},
 		{
+			desc: "offset",
+			args: []string{"-offset", "2", "bar"},
+			want: params{Offset: 2, Input: "bar"},
+		},
+		{
+			desc: "offset/negative",
+			args: []string{"-offset", "-2", "bar"},
+			want: params{Offset: -2, Input: "bar"},
+		},
+		{
 			desc:    "too many args",
 			args:    []string{"-o", "foo", "bar", "baz"},
 			wantErr: "unexpected arguments:",
