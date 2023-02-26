@@ -60,7 +60,6 @@ func TestIntegration(t *testing.T) {
 			output := filepath.Join(dir, "output.md")
 			if tt.OutDir != "" {
 				outDir := filepath.FromSlash(tt.OutDir)
-				require.NoError(t, os.MkdirAll(filepath.Join(dir, outDir), 0o755))
 				output = filepath.Join(dir, outDir, "output.md")
 			}
 

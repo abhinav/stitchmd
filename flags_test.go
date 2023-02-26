@@ -104,3 +104,39 @@ func TestCLIParser_Parse(t *testing.T) {
 		})
 	}
 }
+
+func TestFirstLineOf(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc string
+		give string
+		want string
+	}{
+		{desc: "empty"},
+		{
+			desc: "no newline",
+			give: "foo",
+			want: "foo",
+		},
+		{
+			desc: "single newline",
+			give: "foo\n",
+			want: "foo\n",
+		},
+		{
+			desc: "multiple newlines",
+			give: "foo\nbar\nbaz",
+			want: "foo\n",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.want, firstLineOf(tt.give))
+		})
+	}
+}

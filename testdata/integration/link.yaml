@@ -138,3 +138,31 @@
     ![graph](../static/graph.png)
 
     See also [baz](../in/baz/qux.md).
+
+- name: invalid URL
+  give: |
+    - [Foo](foo.md)
+  files:
+    foo.md: |
+      Stuff about foo.
+      [Bad URL escape](https://example.com/foo%LOL).
+  want: |
+    - [Foo](#foo)
+
+    # Foo
+
+    Stuff about foo.
+    [Bad URL escape](https://example.com/foo%LOL).
+
+- name: external URL
+  give: |
+    - [Bar](bar.md)
+  files:
+    bar.md: |
+      Check out [example](https://example.com/foo.md).
+  want: |
+    - [Bar](#bar)
+
+    # Bar
+
+    Check out [example](https://example.com/foo.md).

@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/yuin/goldmark/ast"
-	"go.abhg.dev/stitchmd/internal/goldast"
 )
 
 type transformer struct {
@@ -21,11 +20,9 @@ type transformer struct {
 	sectionLevel int
 
 	filesByPath map[string]*markdownFileItem
-	tocFile     *goldast.File
 }
 
 func (t *transformer) Transform(coll *markdownCollection) {
-	t.tocFile = coll.TOCFile
 	t.filesByPath = coll.FilesByPath
 	for _, sec := range coll.Sections {
 		t.sectionLevel = sec.TitleLevel()

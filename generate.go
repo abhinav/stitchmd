@@ -16,9 +16,9 @@ type generator struct {
 	Log      *log.Logger
 }
 
-func (g *generator) Generate(coll *markdownCollection) error {
+func (g *generator) Generate(src []byte, coll *markdownCollection) error {
 	for _, sec := range coll.Sections {
-		if err := g.renderSection(coll.TOCFile.Source, sec); err != nil {
+		if err := g.renderSection(src, sec); err != nil {
 			return err
 		}
 		if err := sec.Items.Walk(g.renderItem); err != nil {

@@ -17,13 +17,12 @@ import (
 type collector struct {
 	Parser parser.Parser
 	FS     fs.FS
-	IDGen  *header.IDGen
 
+	idGen *header.IDGen
 	files map[string]*markdownFileItem
 }
 
 type markdownCollection struct {
-	TOCFile  *goldast.File
 	Sections []*markdownSection
 
 	// FilesByPath maps a Markdown file path to its parsed representation.
@@ -31,22 +30,17 @@ type markdownCollection struct {
 	FilesByPath map[string]*markdownFileItem
 }
 
-func (c *collector) Collect(f *goldast.File) (*markdownCollection, error) {
+func (c *collector) Collect(info goldast.Positioner, toc *stitch.Summary) (*markdownCollection, error) {
 	c.files = make(map[string]*markdownFileItem)
+	c.idGen = header.NewIDGen()
 
-	toc, err := stitch.ParseSummary(f)
-	if err != nil {
-		return nil, err
-	}
-
-	errs := goldast.NewErrorList(f.Info)
+	errs := goldast.NewErrorList(info)
 	sections := make([]*markdownSection, len(toc.Sections))
 	for i, sec := range toc.Sections {
 		sections[i] = c.collectSection(errs, sec)
 	}
 
 	return &markdownCollection{
-		TOCFile:     f,
 		Sections:    sections,
 		FilesByPath: c.files,
 	}, errs.Err()
@@ -229,7 +223,7 @@ func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 	h.AppendChild(h, ast.NewString([]byte(item.Text)))
 	h.SetBlankPreviousLines(true)
 
-	id, _ := c.IDGen.GenerateID(item.Text)
+	id, _ := c.idGen.GenerateID(item.Text)
 	return &markdownGroupItem{
 		Item: item,
 		Heading: &markdownHeading{
@@ -249,7 +243,7 @@ type markdownHeading struct {
 
 func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Heading) *markdownHeading {
 	text := string(h.Text(f.Source))
-	id, _ := c.IDGen.GenerateID(text)
+	id, _ := c.idGen.GenerateID(text)
 	oldID, _ := fgen.GenerateID(text)
 	return &markdownHeading{
 		AST:   h,
