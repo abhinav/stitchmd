@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/yuin/goldmark v1.5.4
 	github.com/yuin/goldmark-meta v1.1.0
 	gopkg.in/yaml.v3 v3.0.1
