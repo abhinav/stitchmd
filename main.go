@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
+	"github.com/pkg/diff"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/stitch"
 )
@@ -99,17 +101,26 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	output := cmd.Stdout
 	if len(opts.Output) > 0 {
-		outDir := filepath.Dir(opts.Output)
-		if err := os.MkdirAll(outDir, 0o755); err != nil {
-			return fmt.Errorf("create output directory: %w", err)
-		}
+		if opts.Diff {
+			dw, err := newDiffWriter(opts.Output)
+			if err != nil {
+				return fmt.Errorf("read output: %w", err)
+			}
+			defer dw.Diff(cmd.Stdout)
+			output = dw
+		} else {
+			outDir := filepath.Dir(opts.Output)
+			if err := os.MkdirAll(outDir, 0o755); err != nil {
+				return fmt.Errorf("create output directory: %w", err)
+			}
 
-		f, err := os.Create(opts.Output)
-		if err != nil {
-			return fmt.Errorf("create output: %w", err)
+			f, err := os.Create(opts.Output)
+			if err != nil {
+				return fmt.Errorf("create output: %w", err)
+			}
+			defer f.Close()
+			output = f
 		}
-		defer f.Close()
-		output = f
 	}
 
 	// Relative path from the output directory back to the input directory.
@@ -173,4 +184,47 @@ func (cmd *mainCmd) run(opts *params) error {
 		NoTOC:    opts.NoTOC,
 	}
 	return g.Generate(f.Source, coll)
+}
+
+// diffWriter is an io.Writer that buffers the input
+// and compares it against a reference.
+// If the input doesn't match the reference,
+// a diff is printed to stdout when the writer closes.
+type diffWriter struct {
+	fname string
+	old   []byte
+	new   bytes.Buffer
+}
+
+func newDiffWriter(fname string) (*diffWriter, error) {
+	old, err := os.ReadFile(fname)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+		old = nil
+	}
+
+	return &diffWriter{
+		fname: fname,
+		old:   old,
+	}, nil
+}
+
+func (dw *diffWriter) Write(p []byte) (int, error) {
+	return dw.new.Write(p)
+}
+
+func (dw *diffWriter) Diff(w io.Writer) error {
+	if bytes.Equal(dw.old, dw.new.Bytes()) {
+		return nil
+	}
+
+	return diff.Text(
+		filepath.Join("a", dw.fname),
+		filepath.Join("b", dw.fname),
+		dw.old,
+		dw.new.Bytes(),
+		w,
+	)
 }

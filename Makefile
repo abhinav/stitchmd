@@ -70,9 +70,8 @@ fmtcheck:
 	fi
 
 .PHONY: readmecheck
-readmecheck:
-	make readme
-	@DIFF=$$(git diff README.md); \
+readmecheck: $(STITCHMD)
+	@DIFF=$$($(STITCHMD) -d -o README.md doc/README.md); \
 	if [[ -n "$$DIFF" ]]; then \
 		echo "README.md is out of date:"; \
 		echo "$$DIFF"; \

@@ -17,6 +17,8 @@ OPTIONS
 	change to DIR before reading files.
 	Defaults to the directory of FILE, or the current directory if reading
 	from stdin.
+  -d	report a diff of the output to stdout instead of writing to the file.
+	This is valid only if -o is also specified.
   -version
 	print version information.
   -h, -help

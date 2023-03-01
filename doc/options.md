@@ -6,6 +6,7 @@ stitchmd supports the following options:
 - [`-no-toc`](#disable-the-toc)
 - [`-o FILE`](#write-to-file)
 - [`-C DIR`](#change-the-directory)
+- [`-d`](#report-a-diff)
 
 ## Read from stdin
 
@@ -181,3 +182,22 @@ This is especially useful if your summary file is
 ```bash
 ... | stitchmd -C docs -
 ```
+
+## Report a diff
+
+```
+-d
+```
+
+stitchmd normally writes output directly to the file
+if you pass in a filename with [`-o`](#write-to-file).
+Use the `-d` flag to instead have it report what would change
+in the output file without actually changing it.
+
+```bash
+stitchmd -d -o README.md # ...
+```
+
+This can be useful for lint checks and similar,
+or to do a dry run and find out what would change
+without changing it.

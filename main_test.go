@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain_badFlag(t *testing.T) {
@@ -117,6 +119,62 @@ func TestMain_summaryItemDoesNotExist(t *testing.T) {
 	assert.Equal(t, 1, exitCode)
 	assertNoSuchFileError(t, stderr.String())
 	assert.Contains(t, stderr.String(), "error reading markdown")
+}
+
+func TestDiffWriter(t *testing.T) {
+	t.Parallel()
+
+	// If the file does not exist,
+	// we should consider it to be empty.
+	t.Run("does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		w, err := newDiffWriter("does-not-exist.md")
+		require.NoError(t, err)
+
+		io.WriteString(w, "hello world")
+
+		var buf bytes.Buffer
+		assert.NoError(t, w.Diff(&buf))
+		assert.Contains(t, buf.String(), "+hello world")
+	})
+
+	// Actually diff the file if it exists.
+	t.Run("exists", func(t *testing.T) {
+		t.Parallel()
+
+		path := filepath.Join(t.TempDir(), "test")
+		require.NoError(t,
+			os.WriteFile(path, []byte("hello\nfoo"), 0o644))
+
+		w, err := newDiffWriter(path)
+		require.NoError(t, err)
+
+		io.WriteString(w, "hello\nbar")
+
+		var buf bytes.Buffer
+		assert.NoError(t, w.Diff(&buf))
+		assert.Contains(t, buf.String(), "-foo")
+		assert.Contains(t, buf.String(), "+bar")
+	})
+
+	// There should be no output if the file is unchanged.
+	t.Run("unchanged", func(t *testing.T) {
+		t.Parallel()
+
+		path := filepath.Join(t.TempDir(), "test")
+		require.NoError(t,
+			os.WriteFile(path, []byte("hello world"), 0o644))
+
+		w, err := newDiffWriter(path)
+		require.NoError(t, err)
+
+		io.WriteString(w, "hello world")
+
+		var buf bytes.Buffer
+		assert.NoError(t, w.Diff(&buf))
+		assert.Empty(t, buf.String())
+	})
 }
 
 func assertNoSuchFileError(t *testing.T, str string) {
