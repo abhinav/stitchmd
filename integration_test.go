@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestIntegration(t *testing.T) {
+func TestIntegration_e2e(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
@@ -30,24 +30,13 @@ func TestIntegration(t *testing.T) {
 		OutDir string `yaml:"outDir"`
 	}
 
-	testfiles, err := filepath.Glob("testdata/integration/*.yaml")
-	require.NoError(t, err)
-	require.NotEmpty(t, testfiles)
-
+	groups := decodeTestGroups[testCase](t, "testdata/e2e/*.yaml")
 	var allTests []testCase
-	for _, testfile := range testfiles {
-		testdata, err := os.ReadFile(testfile)
-		require.NoError(t, err)
-
-		groupname := strings.TrimSuffix(filepath.Base(testfile), ".yaml")
-
-		var tests []testCase
-		require.NoError(t, yaml.Unmarshal(testdata, &tests))
-		for i, tt := range tests {
-			tt.Name = fmt.Sprintf("%s/%s", groupname, tt.Name)
-			tests[i] = tt
+	for _, group := range groups {
+		for _, tt := range group.Tests {
+			tt.Name = fmt.Sprintf("%s/%s", group.Name, tt.Name)
+			allTests = append(allTests, tt)
 		}
-		allTests = append(allTests, tests...)
 	}
 
 	for _, tt := range allTests {
@@ -104,4 +93,34 @@ func TestIntegration(t *testing.T) {
 			assert.Empty(t, stdout.String(), "stdout")
 		})
 	}
+}
+
+type testGroup[T any] struct {
+	Name  string
+	Tests []T
+}
+
+func decodeTestGroups[T any](t testing.TB, glob string) []testGroup[T] {
+	t.Helper()
+
+	testfiles, err := filepath.Glob(glob)
+	require.NoError(t, err)
+	require.NotEmpty(t, testfiles)
+
+	var groups []testGroup[T]
+	for _, testfile := range testfiles {
+		testdata, err := os.ReadFile(testfile)
+		require.NoError(t, err)
+
+		groupname := strings.TrimSuffix(filepath.Base(testfile), ".yaml")
+
+		var tests []T
+		require.NoError(t, yaml.Unmarshal(testdata, &tests))
+		groups = append(groups, testGroup[T]{
+			Name:  groupname,
+			Tests: tests,
+		})
+	}
+
+	return groups
 }
