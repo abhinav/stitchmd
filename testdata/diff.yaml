@@ -1,0 +1,53 @@
+- name: no changes
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: "# Foo"
+    bar.md: "# Bar"
+  old: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    # Bar
+  diff: ""
+
+- name: old does not exist
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: "# Foo"
+    bar.md: "# Bar"
+  diff: |
+    @@ -0,0 +1,6 @@
+    +- [foo](#foo)
+    +- [bar](#bar)
+    +
+    +# Foo
+    +
+    +# Bar
+
+- name: some changes
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: "# Foo"
+    bar.md: "# Bar"
+  old: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Bar
+  diff: |
+    @@ -1,4 +1,6 @@
+     - [foo](#foo)
+     - [bar](#bar)
+     
+    +# Foo
+    +
+     # Bar
+

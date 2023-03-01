@@ -94,6 +94,21 @@ func TestCLIParser_Parse(t *testing.T) {
 			want: params{NoTOC: false, Input: "bar"},
 		},
 		{
+			desc: "diff",
+			args: []string{"-d", "-o", "foo", "bar"},
+			want: params{
+				Diff:   true,
+				Output: "foo",
+				Input:  "bar",
+			},
+		},
+		{
+			desc:    "diff/missing o",
+			args:    []string{"-d", "bar"},
+			wantRes: cliParseError,
+			wantErr: "cannot use -d without -o",
+		},
+		{
 			desc:    "too many args",
 			args:    []string{"-o", "foo", "bar", "baz"},
 			wantErr: "unexpected arguments:",

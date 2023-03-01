@@ -19,7 +19,7 @@ func TestIntegration_e2e(t *testing.T) {
 	type testCase struct {
 		Name  string            `yaml:"name"`
 		Give  string            `yaml:"give"`
-		Files map[string]string `yaml:"files"`
+		Files map[string]string `yaml:"files,omitempty"`
 		Want  string            `yaml:"want"`
 
 		Offset int  `yaml:"offset"` // -offset
@@ -27,19 +27,19 @@ func TestIntegration_e2e(t *testing.T) {
 
 		// Path to the output directory,
 		// relative to the test directory.
-		OutDir string `yaml:"outDir"`
+		OutDir string `yaml:"outDir,omitempty"`
 	}
 
 	groups := decodeTestGroups[testCase](t, "testdata/e2e/*.yaml")
-	var allTests []testCase
+	var tests []testCase
 	for _, group := range groups {
 		for _, tt := range group.Tests {
 			tt.Name = fmt.Sprintf("%s/%s", group.Name, tt.Name)
-			allTests = append(allTests, tt)
+			tests = append(tests, tt)
 		}
 	}
 
-	for _, tt := range allTests {
+	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
 			t.Parallel()
@@ -95,9 +95,87 @@ func TestIntegration_e2e(t *testing.T) {
 	}
 }
 
+func TestIntegration_diff(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		Name  string            `yaml:"name"`
+		Give  string            `yaml:"give"`
+		Files map[string]string `yaml:"files,omitempty"`
+		Old   *string           `yaml:"old,omitempty"`
+		Diff  string            `yaml:"diff,omitempty"`
+	}
+
+	groups := decodeTestGroups[testCase](t, "testdata/diff.yaml")
+	var tests []testCase
+	for _, group := range groups {
+		tests = append(tests, group.Tests...)
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.Name, func(t *testing.T) {
+			t.Parallel()
+
+			dir := t.TempDir()
+
+			input := filepath.Join(dir, "summary.md")
+			require.NoError(t, os.WriteFile(input, []byte(tt.Give), 0o644))
+
+			output := filepath.Join(dir, "output.md")
+			if tt.Old != nil {
+				require.NoError(t,
+					os.WriteFile(output, []byte(*tt.Old), 0o644))
+			}
+
+			for filename, content := range tt.Files {
+				path := filepath.Join(dir, filename)
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+				require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+			}
+
+			var stdout, stderr bytes.Buffer
+			defer func() {
+				if t.Failed() {
+					t.Logf("stderr:\n%s", stderr.String())
+				}
+			}()
+
+			cmd := mainCmd{
+				Stdin:  new(bytes.Buffer),
+				Stdout: &stdout,
+				Stderr: &stderr,
+				Getwd: func() (string, error) {
+					return dir, nil
+				},
+			}
+
+			require.NoError(t, cmd.run(&params{
+				Input:  input,
+				Output: output,
+				Diff:   true,
+			}))
+
+			// Drop the file names from the diff.
+			diffLines := strings.Split(stdout.String(), "\n")
+			if len(diffLines) > 0 && strings.HasPrefix(diffLines[0], "--- ") {
+				diffLines = diffLines[1:]
+			}
+			if len(diffLines) > 0 && strings.HasPrefix(diffLines[0], "+++ ") {
+				diffLines = diffLines[1:]
+			}
+
+			got := strings.Join(diffLines, "\n")
+			assert.Equal(t, tt.Diff, got)
+		})
+	}
+}
+
 type testGroup[T any] struct {
 	Name  string
 	Tests []T
+
+	filename string
 }
 
 func decodeTestGroups[T any](t testing.TB, glob string) []testGroup[T] {
@@ -117,8 +195,9 @@ func decodeTestGroups[T any](t testing.TB, glob string) []testGroup[T] {
 		var tests []T
 		require.NoError(t, yaml.Unmarshal(testdata, &tests))
 		groups = append(groups, testGroup[T]{
-			Name:  groupname,
-			Tests: tests,
+			Name:     groupname,
+			Tests:    tests,
+			filename: testfile,
 		})
 	}
 
