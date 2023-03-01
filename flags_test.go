@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Verifies that all flags registered against the flag set
@@ -94,6 +95,16 @@ func TestCLIParser_Parse(t *testing.T) {
 			want: params{NoTOC: false, Input: "bar"},
 		},
 		{
+			desc: "color/true",
+			args: []string{"-color", "bar"},
+			want: params{ColorOutput: colorOutputAlways, Input: "bar"},
+		},
+		{
+			desc: "color/false",
+			args: []string{"-color=false", "bar"},
+			want: params{ColorOutput: colorOutputNever, Input: "bar"},
+		},
+		{
 			desc: "diff",
 			args: []string{"-d", "-o", "foo", "bar"},
 			want: params{
@@ -177,6 +188,109 @@ func TestFirstLineOf(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, tt.want, firstLineOf(tt.give))
+		})
+	}
+}
+
+func TestColorOutput_parse(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc string
+		give []string
+		want colorOutput
+	}{
+		{desc: "default", want: colorOutputAuto},
+		{
+			desc: "no value",
+			give: []string{"-color"},
+			want: colorOutputAlways,
+		},
+		{
+			desc: "explicit always",
+			give: []string{"-color=always"},
+			want: colorOutputAlways,
+		},
+		{
+			desc: "never",
+			give: []string{"-color=never"},
+			want: colorOutputNever,
+		},
+		{
+			desc: "explicit auto",
+			give: []string{"-color=auto"},
+			want: colorOutputAuto,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			fset := flag.NewFlagSet(t.Name(), flag.ContinueOnError)
+
+			var got colorOutput
+			fset.Var(&got, "color", "")
+			require.NoError(t, fset.Parse(tt.give))
+
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, got.Get())
+		})
+	}
+}
+
+func TestColorOutput_parseErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc    string
+		give    []string
+		wantErr string
+	}{
+		{
+			desc:    "unknown value",
+			give:    []string{"-color=foo"},
+			wantErr: "must be one of 'always', 'never', 'auto'",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			fset := flag.NewFlagSet(t.Name(), flag.ContinueOnError)
+			fset.SetOutput(io.Discard)
+
+			var got colorOutput
+			fset.Var(&got, "color", "")
+			assert.ErrorContains(t, fset.Parse(tt.give), tt.wantErr)
+		})
+	}
+}
+
+func TestColorOutput_String(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc string
+		give colorOutput
+		want string
+	}{
+		{desc: "default", want: "auto"},
+		{desc: "always", give: colorOutputAlways, want: "always"},
+		{desc: "never", give: colorOutputNever, want: "never"},
+		{desc: "auto", give: colorOutputAuto, want: "auto"},
+		{desc: "unknown", give: colorOutput(42), want: "unknown (42)"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.want, tt.give.String())
 		})
 	}
 }

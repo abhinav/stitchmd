@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+### Changed
+- The output of `-d` is now colored by default if stdout is a terminal.
+  Disable with `--color=never`, or by setting `NO_COLOR=1`.
+
 ## v0.3.0 - 2023-03-01
 ### Added
 - `-d` flag to print a diff of the output

@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed" // for go:embed
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -23,7 +24,8 @@ type params struct {
 	Offset int
 	NoTOC  bool
 
-	Diff bool
+	Diff        bool
+	ColorOutput colorOutput
 }
 
 // cliParser parses command line arguments.
@@ -48,6 +50,7 @@ func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
 	flag.IntVar(&opts.Offset, "offset", 0, "")
 	flag.BoolVar(&opts.NoTOC, "no-toc", false, "")
 	flag.BoolVar(&opts.Diff, "d", false, "")
+	flag.Var(&opts.ColorOutput, "color", "")
 
 	flag.BoolVar(&p.version, "version", false, "")
 	flag.BoolVar(&p.help, "help", false, "")
@@ -120,4 +123,51 @@ func firstLineOf(s string) string {
 		return s[:i+1]
 	}
 	return s
+}
+
+type colorOutput int
+
+const (
+	colorOutputAuto colorOutput = iota
+	colorOutputAlways
+	colorOutputNever
+)
+
+var _ flag.Getter = (*colorOutput)(nil)
+
+func (c colorOutput) String() string {
+	switch c {
+	case colorOutputAuto:
+		return "auto"
+	case colorOutputAlways:
+		return "always"
+	case colorOutputNever:
+		return "never"
+	default:
+		return fmt.Sprintf("unknown (%d)", int(c))
+	}
+}
+
+func (c colorOutput) Get() interface{} {
+	return c
+}
+
+func (c *colorOutput) Set(s string) error {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "auto":
+		*c = colorOutputAuto
+	case "always", "true":
+		*c = colorOutputAlways
+	case "never", "false":
+		*c = colorOutputNever
+	default:
+		return errors.New("must be one of 'always', 'never', 'auto'")
+	}
+	return nil
+}
+
+// Tells "flag" that the flag argument is optional.
+// If not provided, Set will be called with "true".
+func (c colorOutput) IsBoolFlag() bool {
+	return true
 }

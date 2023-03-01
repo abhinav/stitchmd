@@ -76,6 +76,7 @@ func TestIntegration_e2e(t *testing.T) {
 				Getwd: func() (string, error) {
 					return dir, nil
 				},
+				Getenv: nopGetenv,
 			}
 
 			require.NoError(t, cmd.run(&params{
@@ -148,6 +149,7 @@ func TestIntegration_diff(t *testing.T) {
 				Getwd: func() (string, error) {
 					return dir, nil
 				},
+				Getenv: nopGetenv,
 			}
 
 			require.NoError(t, cmd.run(&params{
