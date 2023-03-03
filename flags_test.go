@@ -114,6 +114,15 @@ func TestCLIParser_Parse(t *testing.T) {
 			},
 		},
 		{
+			desc: "diff alias",
+			args: []string{"-diff", "-o", "foo", "bar"},
+			want: params{
+				Diff:   true,
+				Output: "foo",
+				Input:  "bar",
+			},
+		},
+		{
 			desc:    "diff/missing o",
 			args:    []string{"-d", "bar"},
 			wantRes: cliParseError,

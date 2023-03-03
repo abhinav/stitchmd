@@ -49,8 +49,9 @@ func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
 	flag.StringVar(&opts.Dir, "C", "", "")
 	flag.IntVar(&opts.Offset, "offset", 0, "")
 	flag.BoolVar(&opts.NoTOC, "no-toc", false, "")
-	flag.BoolVar(&opts.Diff, "d", false, "")
 	flag.Var(&opts.ColorOutput, "color", "")
+	flag.BoolVar(&opts.Diff, "d", false, "")
+	flag.BoolVar(&opts.Diff, "diff", false, "")
 
 	flag.BoolVar(&p.version, "version", false, "")
 	flag.BoolVar(&p.help, "help", false, "")
