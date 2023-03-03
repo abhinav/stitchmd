@@ -15,7 +15,10 @@ import (
 	"path/filepath"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
+	"github.com/mattn/go-colorable"
+	isatty "github.com/mattn/go-isatty"
 	"github.com/pkg/diff"
+	"github.com/pkg/diff/write"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/stitch"
 )
@@ -28,6 +31,7 @@ func main() {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Getwd:  os.Getwd,
+		Getenv: os.Getenv,
 	}
 	os.Exit(cmd.Run(os.Args[1:]))
 }
@@ -37,7 +41,8 @@ type mainCmd struct {
 	Stdout io.Writer // == os.Stdout
 	Stderr io.Writer // == os.Stderr
 
-	Getwd func() (string, error) // == os.Getwd
+	Getwd  func() (string, error) // == os.Getwd
+	Getenv func(string) string    // == os.Getenv
 }
 
 func (cmd *mainCmd) Run(args []string) (exitCode int) {
@@ -62,7 +67,25 @@ func (cmd *mainCmd) Run(args []string) (exitCode int) {
 	return 0
 }
 
+func (cmd *mainCmd) shouldColor(opts *params) bool {
+	switch opts.ColorOutput {
+	case colorOutputAuto:
+		return cmd.Getenv("NO_COLOR") == "" &&
+			cmd.Getenv("TERM") != "dumb" &&
+			supportsColor(cmd.Stdout)
+	case colorOutputAlways:
+		return true
+	default:
+		return false
+	}
+}
+
 func (cmd *mainCmd) run(opts *params) error {
+	shouldColor := cmd.shouldColor(opts)
+	if shouldColor {
+		cmd.Stdout = makeColorable(cmd.Stdout)
+	}
+
 	log := log.New(cmd.Stderr, "", 0)
 
 	input := cmd.Stdin
@@ -102,7 +125,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	output := cmd.Stdout
 	if len(opts.Output) > 0 {
 		if opts.Diff {
-			dw, err := newDiffWriter(opts.Output)
+			dw, err := newDiffWriter(opts.Output, shouldColor)
 			if err != nil {
 				return fmt.Errorf("read output: %w", err)
 			}
@@ -194,9 +217,10 @@ type diffWriter struct {
 	fname string
 	old   []byte
 	new   bytes.Buffer
+	color bool
 }
 
-func newDiffWriter(fname string) (*diffWriter, error) {
+func newDiffWriter(fname string, color bool) (*diffWriter, error) {
 	old, err := os.ReadFile(fname)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -208,6 +232,7 @@ func newDiffWriter(fname string) (*diffWriter, error) {
 	return &diffWriter{
 		fname: fname,
 		old:   old,
+		color: color,
 	}, nil
 }
 
@@ -220,11 +245,35 @@ func (dw *diffWriter) Diff(w io.Writer) error {
 		return nil
 	}
 
+	var opts []write.Option
+	if dw.color {
+		opts = append(opts, write.TerminalColor())
+	}
+
 	return diff.Text(
 		filepath.Join("a", dw.fname),
 		filepath.Join("b", dw.fname),
 		dw.old,
 		dw.new.Bytes(),
 		w,
+		opts...,
 	)
+}
+
+func supportsColor(w io.Writer) bool {
+	// TODO: Use Is*Writer variants once this lands:
+	// https://github.com/mattn/go-isatty/pull/81
+	if f, ok := w.(interface{ Fd() uintptr }); ok {
+		return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+	}
+	return false
+}
+
+func makeColorable(w io.Writer) io.Writer {
+	if f, ok := w.(*os.File); ok {
+		// TODO: Drop upcast once this lands:
+		// https://github.com/mattn/go-colorable/pull/66
+		return colorable.NewColorable(f)
+	}
+	return w
 }

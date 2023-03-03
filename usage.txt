@@ -19,6 +19,8 @@ OPTIONS
 	from stdin.
   -d	report a diff of the output to stdout instead of writing to the file.
 	This is valid only if -o is also specified.
+  -color [always|never|auto]
+	whether to use color in the command output. Defaults to 'auto'.
   -version
 	print version information.
   -h, -help
