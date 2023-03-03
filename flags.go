@@ -18,11 +18,12 @@ var (
 
 // params defines the parameters for the command line program.
 type params struct {
-	Input  string // defaults to stdin
-	Output string // defaults to stdout
-	Dir    string
-	Offset int
-	NoTOC  bool
+	Preface string
+	Input   string // defaults to stdin
+	Output  string // defaults to stdout
+	Dir     string
+	Offset  int
+	NoTOC   bool
 
 	Diff        bool
 	ColorOutput colorOutput
@@ -45,6 +46,7 @@ func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
 	}
 
 	var opts params
+	flag.StringVar(&opts.Preface, "preface", "", "")
 	flag.StringVar(&opts.Output, "o", "", "")
 	flag.StringVar(&opts.Dir, "C", "", "")
 	flag.IntVar(&opts.Offset, "offset", 0, "")

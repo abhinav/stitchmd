@@ -129,6 +129,22 @@ func TestMain_summaryItemDoesNotExist(t *testing.T) {
 	assert.Contains(t, stderr.String(), "error reading markdown")
 }
 
+func TestMain_prefaceDoesNotExist(t *testing.T) {
+	t.Parallel()
+
+	var stderr bytes.Buffer
+	exitCode := (&mainCmd{
+		Stdin:  bytes.NewReader([]byte("- [foo](foo.md)")),
+		Stdout: io.Discard,
+		Stderr: &stderr,
+		Getwd:  os.Getwd,
+		Getenv: nopGetenv,
+	}).Run([]string{"-preface", "does-not-exist.md", "-"})
+	assert.Equal(t, 1, exitCode)
+	assert.Contains(t, stderr.String(), "-preface: open does-not-exist.md:")
+	assertNoSuchFileError(t, stderr.String())
+}
+
 func TestMain_shouldColor(t *testing.T) {
 	t.Parallel()
 

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - `-diff` flag as an alias for `-d`.
+- `-preface` flag to include contents of another file in the output verbatim.
 
 ### Changed
 - The output of `-d` is now colored by default if stdout is a terminal.

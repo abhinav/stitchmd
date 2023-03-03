@@ -14,6 +14,7 @@ TEST_FLAGS ?= -race
 STATICCHECK = bin/staticcheck
 REVIVE = bin/revive
 STITCHMD = bin/stitchmd
+STITCHMD_ARGS = -o README.md -preface doc/preface.txt doc/README.md
 
 # All known Go files.
 GO_FILES = $(shell find . \
@@ -71,7 +72,7 @@ fmtcheck:
 
 .PHONY: readmecheck
 readmecheck: $(STITCHMD)
-	@DIFF=$$($(STITCHMD) -d -o README.md doc/README.md); \
+	@DIFF=$$($(STITCHMD) -color -d $(STITCHMD_ARGS)); \
 	if [[ -n "$$DIFF" ]]; then \
 		echo "README.md is out of date:"; \
 		echo "$$DIFF"; \
@@ -95,8 +96,8 @@ tidycheck:
 		false; \
 	fi
 
-README.md: $(wildcard doc/*.md) $(STITCHMD)
-	$(STITCHMD) -o README.md doc/README.md
+README.md: $(wildcard doc/*) $(STITCHMD)
+	$(STITCHMD) $(STITCHMD_ARGS)
 
 $(STITCHMD): $(GO_SRC_FILES)
 	go build -o $(STITCHMD)

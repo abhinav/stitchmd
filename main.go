@@ -94,10 +94,24 @@ func (cmd *mainCmd) run(opts *params) error {
 		filename = opts.Input
 		f, err := os.Open(opts.Input)
 		if err != nil {
-			return fmt.Errorf("open input: %w", err)
+			return err
 		}
 		defer f.Close()
 		input = f
+	}
+
+	var preface []byte
+	if len(opts.Preface) > 0 {
+		var err error
+		preface, err = os.ReadFile(opts.Preface)
+		if err != nil {
+			return fmt.Errorf("-preface: %w", err)
+		}
+
+		// Ensure trailing newline.
+		if len(preface) > 0 && preface[len(preface)-1] != '\n' {
+			preface = append(preface, '\n')
+		}
 	}
 
 	cwd, err := cmd.Getwd()
@@ -127,7 +141,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		if opts.Diff {
 			dw, err := newDiffWriter(opts.Output, shouldColor)
 			if err != nil {
-				return fmt.Errorf("read output: %w", err)
+				return fmt.Errorf("-diff: %w", err)
 			}
 			defer dw.Diff(cmd.Stdout)
 			output = dw
@@ -168,7 +182,7 @@ func (cmd *mainCmd) run(opts *params) error {
 
 	src, err := io.ReadAll(input)
 	if err != nil {
-		return fmt.Errorf("read input: %w", err)
+		return fmt.Errorf("input: %w", err)
 	}
 
 	mdParser := goldast.DefaultParser()
@@ -201,6 +215,7 @@ func (cmd *mainCmd) run(opts *params) error {
 	)
 
 	g := &generator{
+		Preface:  preface,
 		W:        output,
 		Renderer: render,
 		Log:      log,
