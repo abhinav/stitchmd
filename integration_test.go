@@ -22,8 +22,9 @@ func TestIntegration_e2e(t *testing.T) {
 		Files map[string]string `yaml:"files,omitempty"`
 		Want  string            `yaml:"want"`
 
-		Offset int  `yaml:"offset"` // -offset
-		NoTOC  bool `yaml:"no-toc"` // -no-toc
+		Offset  int    `yaml:"offset"`  // -offset
+		NoTOC   bool   `yaml:"no-toc"`  // -no-toc
+		Preface string `yaml:"preface"` // -preface
 
 		// Path to the output directory,
 		// relative to the test directory.
@@ -55,6 +56,12 @@ func TestIntegration_e2e(t *testing.T) {
 				output = filepath.Join(dir, outDir, "output.md")
 			}
 
+			var preface string
+			if tt.Preface != "" {
+				preface = filepath.Join(dir, "preface.md")
+				require.NoError(t, os.WriteFile(preface, []byte(tt.Preface), 0o644))
+			}
+
 			for filename, content := range tt.Files {
 				path := filepath.Join(dir, filename)
 				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
@@ -80,10 +87,11 @@ func TestIntegration_e2e(t *testing.T) {
 			}
 
 			require.NoError(t, cmd.run(&params{
-				Input:  input,
-				Output: output,
-				Offset: tt.Offset,
-				NoTOC:  tt.NoTOC,
+				Input:   input,
+				Output:  output,
+				Offset:  tt.Offset,
+				NoTOC:   tt.NoTOC,
+				Preface: preface,
 			}))
 
 			got, err := os.ReadFile(output)
@@ -100,11 +108,12 @@ func TestIntegration_diff(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
-		Name  string            `yaml:"name"`
-		Give  string            `yaml:"give"`
-		Files map[string]string `yaml:"files,omitempty"`
-		Old   *string           `yaml:"old,omitempty"`
-		Diff  string            `yaml:"diff,omitempty"`
+		Name    string            `yaml:"name"`
+		Give    string            `yaml:"give"`
+		Files   map[string]string `yaml:"files,omitempty"`
+		Preface string            `yaml:"preface"` // -preface
+		Old     *string           `yaml:"old,omitempty"`
+		Diff    string            `yaml:"diff,omitempty"`
 	}
 
 	groups := decodeTestGroups[testCase](t, "testdata/diff.yaml")
@@ -127,6 +136,12 @@ func TestIntegration_diff(t *testing.T) {
 			if tt.Old != nil {
 				require.NoError(t,
 					os.WriteFile(output, []byte(*tt.Old), 0o644))
+			}
+
+			var preface string
+			if tt.Preface != "" {
+				preface = filepath.Join(dir, "preface.md")
+				require.NoError(t, os.WriteFile(preface, []byte(tt.Preface), 0o644))
 			}
 
 			for filename, content := range tt.Files {
@@ -153,9 +168,10 @@ func TestIntegration_diff(t *testing.T) {
 			}
 
 			require.NoError(t, cmd.run(&params{
-				Input:  input,
-				Output: output,
-				Diff:   true,
+				Input:   input,
+				Output:  output,
+				Preface: preface,
+				Diff:    true,
 			}))
 
 			// Drop the file names from the diff.

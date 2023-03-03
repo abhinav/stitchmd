@@ -123,6 +123,15 @@ func TestCLIParser_Parse(t *testing.T) {
 			},
 		},
 		{
+			desc: "preface",
+			args: []string{"-preface", "foo", "-o", "bar", "baz"},
+			want: params{
+				Preface: "foo",
+				Output:  "bar",
+				Input:   "baz",
+			},
+		},
+		{
 			desc:    "diff/missing o",
 			args:    []string{"-d", "bar"},
 			wantRes: cliParseError,

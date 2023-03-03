@@ -1,0 +1,37 @@
+- name: no newline
+  give: |
+    - [foo](foo.md)
+  files:
+    foo.md: "# Hello"
+  preface: "stuff"
+  want: |
+    stuff
+    - [foo](#hello)
+
+    # Hello
+
+- name: newline
+  give: |
+    - [foo](foo.md)
+  files:
+    foo.md: "# Hello"
+  preface: "stuff\n"
+  want: |
+    stuff
+    - [foo](#hello)
+
+    # Hello
+
+- name: multiple newline
+  give: |
+    - [foo](foo.md)
+  files:
+    foo.md: "# Hello"
+  preface: "stuff\n\n"
+  want: |
+    stuff
+
+    - [foo](#hello)
+
+    # Hello
+

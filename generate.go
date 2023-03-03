@@ -11,6 +11,7 @@ import (
 type generator struct {
 	idx int
 
+	Preface  []byte
 	W        io.Writer
 	Renderer *mdfmt.Renderer
 	Log      *log.Logger
@@ -18,6 +19,10 @@ type generator struct {
 }
 
 func (g *generator) Generate(src []byte, coll *markdownCollection) error {
+	if _, err := g.W.Write(g.Preface); err != nil {
+		return err
+	}
+
 	for _, sec := range coll.Sections {
 		if err := g.renderSection(src, sec); err != nil {
 			return err
