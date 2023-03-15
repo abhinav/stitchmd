@@ -331,6 +331,6 @@ func assertNoSuchFileError(t *testing.T, str string) {
 	}
 }
 
-func nopGetenv(key string) string {
+func nopGetenv(string) string {
 	return ""
 }

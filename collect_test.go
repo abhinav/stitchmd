@@ -58,6 +58,6 @@ type fixedPositioner goldast.Position
 
 var _ goldast.Positioner = fixedPositioner{}
 
-func (p fixedPositioner) Position(offset int) goldast.Position {
+func (p fixedPositioner) Position(int) goldast.Position {
 	return goldast.Position(p)
 }
