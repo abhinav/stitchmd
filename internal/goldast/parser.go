@@ -6,11 +6,11 @@ package goldast
 
 import (
 	"github.com/yuin/goldmark"
-	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
+	"go.abhg.dev/goldmark/frontmatter"
 )
 
 // File is a parsed Markdown file.
@@ -48,7 +48,7 @@ func DefaultParser() parser.Parser {
 	return goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
-			meta.New(),
+			&frontmatter.Extender{},
 		),
 	).Parser()
 }
