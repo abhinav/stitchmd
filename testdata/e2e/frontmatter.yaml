@@ -1,4 +1,4 @@
-- name: ignores frontmatter
+- name: ignores YAML
   give: |
     - [foo](foo.md)
     - [bar](bar.md)
@@ -8,6 +8,41 @@
       no_list: true
       tags: [a, b, c]
       ---
+
+      # Foo
+
+      Stuff.
+    bar.md: |
+      ---
+      no_list: true
+      tags: [d, e, f]
+      ---
+
+      # Bar
+
+      More stuff.
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    Stuff.
+
+    # Bar
+
+    More stuff.
+
+- name: ignores TOML
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      +++
+      no_list = true
+      tags = ["a", "b", "c"]
+      +++
 
       # Foo
 
