@@ -31,8 +31,8 @@ type params struct {
 
 // cliParser parses command line arguments.
 type cliParser struct {
-	Stdout io.Writer
-	Stderr io.Writer
+	Stdout io.Writer // required
+	Stderr io.Writer // required
 
 	version bool
 	help    bool

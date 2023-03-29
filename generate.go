@@ -12,8 +12,8 @@ type generator struct {
 	idx int
 
 	Preface  []byte
-	W        io.Writer
-	Renderer *mdfmt.Renderer
+	W        io.Writer       // required
+	Renderer *mdfmt.Renderer // required
 	Log      *log.Logger
 	NoTOC    bool
 }

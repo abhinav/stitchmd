@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/mgechev/revive v1.3.1
+	go.abhg.dev/requiredfield v0.1.0
 	honnef.co/go/tools v0.4.3
 )
 

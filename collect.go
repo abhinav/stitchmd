@@ -15,8 +15,8 @@ import (
 // collector loads all Markdown files in a TOC
 // and builds an alternative, parsed representation of the files.
 type collector struct {
-	Parser parser.Parser
-	FS     fs.FS
+	Parser parser.Parser // required
+	FS     fs.FS         // required
 
 	idGen *header.IDGen
 	files map[string]*markdownFileItem
