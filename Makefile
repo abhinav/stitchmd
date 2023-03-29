@@ -13,6 +13,7 @@ TEST_FLAGS ?= -race
 
 STATICCHECK = bin/staticcheck
 REVIVE = bin/revive
+REQUIREDFIELD = bin/requiredfield
 STITCHMD = bin/stitchmd
 STITCHMD_ARGS = -o README.md -preface doc/preface.txt doc/README.md
 
@@ -87,6 +88,10 @@ staticcheck: $(STATICCHECK)
 revive: $(REVIVE)
 	revive -set_exit_status ./...
 
+.PHONY: requiredfield
+requiredfield: $(REQUIREDFIELD)
+	go vet -vettool=$(REQUIREDFIELD) ./...
+
 .PHONY: tidycheck
 tidycheck:
 	make tidy
@@ -107,3 +112,6 @@ $(STATICCHECK): tools/go.mod
 
 $(REVIVE): tools/go.mod
 	cd tools && go install github.com/mgechev/revive
+
+$(REQUIREDFIELD): tools/go.mod
+	cd tools && go install go.abhg.dev/requiredfield/cmd/requiredfield

@@ -11,12 +11,12 @@ import (
 // ErrorList tracks errors associated with positions of ast.Nodes in a
 // document.
 type ErrorList struct {
-	info Positioner
+	info Positioner // required
 	errs []*posError
 
 	// Reports the position of the given node.
 	// Overridden in tests.
-	offsetOf func(ast.Node) int
+	offsetOf func(ast.Node) int // required
 }
 
 // NewErrorList builds an ErrorList
@@ -68,8 +68,8 @@ func (el *ErrorList) Err() error {
 
 // posError wraps an error with position information.
 type posError struct {
-	Offset int
-	Err    error
+	Offset int   // required
+	Err    error // required
 }
 
 func (e *posError) Error() string {

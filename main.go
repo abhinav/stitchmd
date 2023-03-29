@@ -37,12 +37,12 @@ func main() {
 }
 
 type mainCmd struct {
-	Stdin  io.Reader // == os.Stdin
-	Stdout io.Writer // == os.Stdout
-	Stderr io.Writer // == os.Stderr
+	Stdin  io.Reader // required (os.Stdin)
+	Stdout io.Writer // required (os.Stdout)
+	Stderr io.Writer // required (os.Stderr)
 
-	Getwd  func() (string, error) // == os.Getwd
-	Getenv func(string) string    // == os.Getenv
+	Getwd  func() (string, error) // required (os.Getwd)
+	Getenv func(string) string    // required (os.Getenv)
 }
 
 func (cmd *mainCmd) Run(args []string) (exitCode int) {
