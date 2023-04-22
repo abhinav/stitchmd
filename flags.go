@@ -82,6 +82,11 @@ func (p *cliParser) Parse(args []string) (*params, cliParseResult) {
 
 	if p.version {
 		fmt.Fprintln(p.Stdout, fset.Name(), strings.TrimSpace(_version))
+		fmt.Fprintln(p.Stdout, "Copyright (C) 2023 Abhinav Gupta")
+		fmt.Fprintln(p.Stdout, "  <https://github.com/abhinav/stitchmd>")
+		fmt.Fprintln(p.Stdout, "stitchmd comes with ABSOLUTELY NO WARRANTY.")
+		fmt.Fprintln(p.Stdout, "This is free software, and you are welcome to redistribute it")
+		fmt.Fprintln(p.Stdout, "under certain conditions. See source for details.")
 		return nil, cliParseHelp
 	}
 	if p.help {

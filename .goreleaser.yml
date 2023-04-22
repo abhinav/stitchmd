@@ -24,7 +24,7 @@ aurs:
     description: "Stitch multiple Markdown files together into a single document."
     maintainers:
       - 'Abhinav Gupta <mail@abhinavg.net>'
-    license: "MIT"
+    license: "GPL-2.0"
     git_url: "ssh://aur@aur.archlinux.org/stitchmd-bin.git"
     skip_upload: auto
     private_key: '{{ .Env.AUR_KEY }}'
@@ -48,7 +48,7 @@ brews:
       email: mail@abhinavg.net
     homepage: https://github.com/abhinav/stitchmd
     description: "Stitch multiple Markdown files together into a single document."
-    license: "MIT"
+    license: "GPL-2.0"
     skip_upload: auto
     test: |
       system "#{bin}/stitchmd -version"
