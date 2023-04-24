@@ -46,3 +46,20 @@
     ## Foo
 
     ## Bar
+
+- name: external link
+  give: |
+    - [foo](foo.md)
+    - [bar](https://example.com)
+    - [baz](baz.md)
+  files:
+    foo.md: "# Hello"
+    baz.md: "# World"
+  want: |
+    - [foo](#hello)
+    - [bar](https://example.com)
+    - [baz](#world)
+
+    # Hello
+
+    # World

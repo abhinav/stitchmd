@@ -189,6 +189,75 @@ func TestIntegration_diff(t *testing.T) {
 	}
 }
 
+func TestIntegration_errors(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		Name  string            `yaml:"name"`
+		Give  string            `yaml:"give"`
+		Files map[string]string `yaml:"files,omitempty"`
+		Want  []string          `yaml:"want"`
+	}
+
+	groups := decodeTestGroups[testCase](t, "testdata/errors.yaml")
+	var tests []testCase
+	for _, group := range groups {
+		for _, tt := range group.Tests {
+			tt.Name = fmt.Sprintf("%s/%s", group.Name, tt.Name)
+			tests = append(tests, tt)
+		}
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.Name, func(t *testing.T) {
+			t.Parallel()
+
+			require.NotEmpty(t, tt.Want, "test case must have at least one error")
+
+			dir := t.TempDir()
+
+			input := filepath.Join(dir, "summary.md")
+			require.NoError(t, os.WriteFile(input, []byte(tt.Give), 0o644))
+
+			for filename, content := range tt.Files {
+				path := filepath.Join(dir, filename)
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+				require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+			}
+
+			var stdout, stderr bytes.Buffer
+			defer func() {
+				if t.Failed() {
+					t.Logf("stdout:\n%s", stdout.String())
+				}
+			}()
+
+			cmd := mainCmd{
+				Stdin:  new(bytes.Buffer),
+				Stdout: &stdout,
+				Stderr: &stderr,
+				Getwd: func() (string, error) {
+					return dir, nil
+				},
+				Getenv: nopGetenv,
+			}
+
+			err := cmd.run(&params{Input: input})
+			require.Error(t, err)
+
+			got := stderr.String()
+			for _, want := range tt.Want {
+				if want, ok := strings.CutPrefix(want, "/"); ok {
+					assert.Regexp(t, want, got)
+				} else {
+					assert.Contains(t, got, want)
+				}
+			}
+		})
+	}
+}
+
 type testGroup[T any] struct {
 	Name  string
 	Tests []T

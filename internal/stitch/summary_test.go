@@ -145,6 +145,13 @@ func TestParseSummary(t *testing.T) {
 						linkItem(1, "baz", "baz.md"))),
 			),
 		},
+		{
+			desc: "external link",
+			give: "- [foo](https://example.com)",
+			want: toc(
+				section(0, "", linkItem(0, "foo", "https://example.com")),
+			),
+		},
 	}
 
 	for _, tt := range tests {

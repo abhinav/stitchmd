@@ -59,6 +59,19 @@ to indicate a hierarchy.
     ```
     </details>
 
+- **External links**:
+  These will be written in the generated table-of-contents verbatim.
+  They cannot have other items nested inside them.
+
+    <details>
+    <summary>Example</summary>
+
+    ```markdown
+    - [Overview](overview.md)
+    - [Community](https://example.com)
+    ```
+    </details>
+
 
 Items listed in a section are rendered together under that section.
 A section is rendered in its entirety

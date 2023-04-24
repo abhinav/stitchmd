@@ -9,7 +9,7 @@ import (
 )
 
 type generator struct {
-	idx int
+	headingIdx int
 
 	Preface  []byte
 	W        io.Writer       // required
@@ -56,12 +56,14 @@ func (g *generator) renderSection(src []byte, sec *markdownSection) error {
 	return nil
 }
 
-func (g *generator) renderItem(item markdownItem) error {
-	if g.idx > 0 {
+func (g *generator) addHeadingSep() {
+	if g.headingIdx > 0 {
 		io.WriteString(g.W, "\n")
 	}
-	g.idx++
+	g.headingIdx++
+}
 
+func (g *generator) renderItem(item markdownItem) error {
 	switch item := item.(type) {
 	case *markdownGroupItem:
 		return g.renderGroupItem(item)
@@ -69,12 +71,18 @@ func (g *generator) renderItem(item markdownItem) error {
 	case *markdownFileItem:
 		return g.renderFileItem(item)
 
+	case *markdownExternalLinkItem:
+		// Nothing to do.
+		// The item was already rendered in the TOC.
+		return nil
+
 	default:
 		panic(fmt.Sprintf("unknown markdown item type %T", item))
 	}
 }
 
 func (g *generator) renderGroupItem(group *markdownGroupItem) error {
+	g.addHeadingSep()
 	if err := g.Renderer.Render(g.W, nil, group.Heading.AST); err != nil {
 		return err
 	}
@@ -83,5 +91,6 @@ func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 }
 
 func (g *generator) renderFileItem(file *markdownFileItem) error {
+	g.addHeadingSep()
 	return g.Renderer.Render(g.W, file.File.Source, file.File.AST)
 }

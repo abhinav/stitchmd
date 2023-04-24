@@ -13,9 +13,9 @@ type Node[T any] struct {
 // Transform creates a new node
 // by transforming the given node and all its descendants
 // using the given function.
-func Transform[T, U any](t *Node[T], f func(T) U) *Node[U] {
+func Transform[T, U any](t *Node[T], f func(Cursor[T]) U) *Node[U] {
 	return &Node[U]{
-		Value: f(t.Value),
+		Value: f(Cursor[T]{n: t}),
 		List:  TransformList(t.List, f),
 	}
 }
@@ -40,10 +40,26 @@ func (n *Node[T]) Walk(f func(T) error) error {
 // List is a collection of nodes.
 type List[T any] []*Node[T]
 
+// Cursor points to a node in the tree.
+// It provides read-only access to information about the node.
+type Cursor[T any] struct {
+	n *Node[T]
+}
+
+// Value returns the value held by the node.
+func (c *Cursor[T]) Value() T {
+	return c.n.Value
+}
+
+// ChildCount returns the number of direct children of the node.
+func (c *Cursor[T]) ChildCount() int {
+	return len(c.n.List)
+}
+
 // TransformList creates a new node list
 // by transforming the given node list and all its descendants
 // using the given function.
-func TransformList[T, U any](t List[T], f func(T) U) List[U] {
+func TransformList[T, U any](t List[T], f func(Cursor[T]) U) List[U] {
 	if t == nil {
 		// Match nilness of the input.
 		return nil

@@ -28,7 +28,17 @@ func TestTransform(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, want, Transform(give, strconv.Itoa))
+	nodes := make(map[int]int) // value -> child count
+	assert.Equal(t, want, Transform(give, func(c Cursor[int]) string {
+		nodes[c.Value()] = c.ChildCount()
+		return strconv.Itoa(c.Value())
+	}))
+	assert.Equal(t, map[int]int{
+		1: 2,
+		2: 1,
+		3: 0,
+		4: 0,
+	}, nodes)
 }
 
 func TestWalk(t *testing.T) {

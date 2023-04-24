@@ -1,0 +1,13 @@
+# For 'want', if an entry begins with '/',
+# it's treated as a regular expression.
+
+- name: external link no children
+  give: |
+    - [foo](foo.md)
+    - [bar](https://example.com)
+      - [baz](baz.md)
+  files:
+    foo.md: '# Foo'
+    baz.md: '# Baz'
+  want:
+    - "2:3:external link cannot have children"
