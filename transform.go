@@ -53,6 +53,8 @@ func (t *transformer) transformItem(item markdownItem) {
 		t.transformGroup(item)
 	case *markdownFileItem:
 		t.transformFile(item)
+	case *markdownExternalLinkItem:
+		// Nothing to do.
 	default:
 		panic(fmt.Sprintf("unknown item type: %T", item))
 	}

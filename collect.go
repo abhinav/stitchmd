@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
@@ -53,10 +55,10 @@ type markdownSection struct {
 }
 
 func (c *collector) collectSection(errs *goldast.ErrorList, sec *stitch.Section) *markdownSection {
-	items := tree.TransformList(sec.Items, func(item stitch.Item) markdownItem {
-		i, err := c.collectItem(item)
+	items := tree.TransformList(sec.Items, func(cursor tree.Cursor[stitch.Item]) markdownItem {
+		i, err := c.collectItem(cursor)
 		if err != nil {
-			errs.Pushf(item.Node(), "%v", err)
+			errs.Pushf(cursor.Value().Node(), "%v", err)
 			return nil
 		}
 		return i
@@ -78,14 +80,16 @@ func (c *collector) collectSection(errs *goldast.ErrorList, sec *stitch.Section)
 //
 //   - markdownFileItem: an included Markdown file
 //   - markdownGroupItem: a title without any files, grouping other items
+//   - markdownExternalLinkItem: an external link
 type markdownItem interface {
 	markdownItem()
 }
 
-func (c *collector) collectItem(item stitch.Item) (markdownItem, error) {
+func (c *collector) collectItem(cursor tree.Cursor[stitch.Item]) (markdownItem, error) {
+	item := cursor.Value()
 	switch item := item.(type) {
 	case *stitch.LinkItem:
-		return c.collectFileItem(item)
+		return c.collectLinkItem(item, cursor)
 
 	case *stitch.TextItem:
 		return c.collectGroupItem(item), nil
@@ -94,6 +98,28 @@ func (c *collector) collectItem(item stitch.Item) (markdownItem, error) {
 		panic(fmt.Sprintf("unhandled item type %T", item))
 	}
 }
+
+func (c *collector) collectLinkItem(item *stitch.LinkItem, cursor tree.Cursor[stitch.Item]) (markdownItem, error) {
+	u, err := url.Parse(item.Target)
+	if err == nil && u.Host != "" {
+		if cursor.ChildCount() > 0 {
+			return nil, errors.New("external link cannot have children")
+		}
+		return &markdownExternalLinkItem{
+			Item: item,
+		}, nil
+	}
+
+	return c.collectFileItem(item)
+}
+
+// markdownExternalLinkItem is a marker for external links
+// in the summary.
+type markdownExternalLinkItem struct {
+	Item *stitch.LinkItem
+}
+
+func (*markdownExternalLinkItem) markdownItem() {}
 
 type markdownFileItem struct {
 	// Path is the /-separated path to the Markdown file.
