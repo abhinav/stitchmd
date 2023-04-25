@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/stitchmd/internal/stitch"
 )
 
@@ -61,7 +62,7 @@ func (t *transformer) transformItem(item markdownItem) {
 }
 
 func (t *transformer) transformGroup(group *markdownGroupItem) {
-	t.transformHeading(group.Item, group.Heading.AST)
+	group.src = t.transformHeading(group.src, group.Item, group.Heading)
 
 	// Replace "Foo" in the list with "[Foo](#foo)".
 	item := group.Item.AST
@@ -75,9 +76,11 @@ func (t *transformer) transformGroup(group *markdownGroupItem) {
 }
 
 func (t *transformer) transformFile(f *markdownFileItem) {
+	src := f.File.Source
 	for _, h := range f.Headings {
-		t.transformHeading(f.Item, h.AST)
+		src = t.transformHeading(src, f.Item, h)
 	}
+	f.File.Source = src
 
 	t.transformLink(".", f, f.Item.AST)
 
@@ -98,11 +101,43 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 	}
 }
 
-func (t *transformer) transformHeading(item stitch.Item, h *ast.Heading) {
-	h.Level += item.ItemDepth() + t.sectionOffset
-	if h.Level < 1 {
-		h.Level = 1
+func (t *transformer) transformHeading(src []byte, item stitch.Item, h *markdownHeading) []byte {
+	h.Lvl += item.ItemDepth() + t.sectionOffset
+	if h.Lvl < 1 {
+		h.Lvl = 1
 	}
+
+	if h.Lvl <= 6 {
+		if hn, ok := h.AST.(*ast.Heading); ok {
+			hn.Level = h.Lvl
+			return src
+		}
+	}
+
+	// This heading is too deep to represent in Markdown.
+	// Replace it with a manual anchor and bold text.
+	para := ast.NewParagraph()
+
+	start := len(src)
+	src = fmt.Appendf(src, "<a id=%q></a> ", h.ID)
+	end := len(src)
+
+	link := ast.NewRawHTML()
+	link.Segments.Append(text.NewSegment(start, end))
+	para.AppendChild(para, link)
+
+	bold := ast.NewEmphasis(2)
+	for c := h.AST.FirstChild(); c != nil; c = c.NextSibling() {
+		bold.AppendChild(bold, c)
+	}
+	para.AppendChild(para, bold)
+
+	if parent := h.AST.Parent(); parent != nil {
+		parent.ReplaceChild(parent, h.AST, para)
+	}
+	h.AST = para
+
+	return src
 }
 
 func (t *transformer) transformLink(fromPath string, f *markdownFileItem, link *ast.Link) {

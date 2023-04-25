@@ -220,7 +220,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		// if any of them is a level 1 header.
 		if len(h1s) > 0 {
 			for _, h := range mf.Headings {
-				h.AST.Level++
+				h.Lvl++
 			}
 		}
 		mf.Headings = append([]*markdownHeading{mf.Title}, mf.Headings...)
@@ -233,6 +233,8 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 type markdownGroupItem struct {
 	Item    *stitch.TextItem
 	Heading *markdownHeading
+
+	src []byte
 }
 
 func (*markdownGroupItem) markdownItem() {}
@@ -248,13 +250,15 @@ func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 		Heading: &markdownHeading{
 			AST: h,
 			ID:  id,
+			Lvl: h.Level,
 		},
 	}
 }
 
 type markdownHeading struct {
-	AST *ast.Heading
+	AST ast.Node
 	ID  string
+	Lvl int
 
 	// ID of the heading in the original file.
 	OldID string
@@ -268,9 +272,10 @@ func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Headi
 		AST:   h,
 		ID:    id,
 		OldID: oldID,
+		Lvl:   h.Level,
 	}
 }
 
 func (h *markdownHeading) Level() int {
-	return h.AST.Level
+	return h.Lvl
 }

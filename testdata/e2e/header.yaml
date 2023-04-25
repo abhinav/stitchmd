@@ -65,3 +65,68 @@
     ## Foo
 
     I collide with the other one.
+
+- name: header too high
+  give: |
+    - One
+      - Two
+        - Three
+          - Four
+            - Five
+              - [Six](six.md)
+                - Twelve
+                  - Thirteen
+                    - [Fourteen](fourteen.md)
+  files:
+    six.md: |
+      # Six
+
+      ## Seven
+
+      ### Eight
+
+      #### Nine
+
+      ##### Ten
+
+      ###### Eleven
+    fourteen.md: |
+      # Fourteen
+  want: |
+    - [One](#one)
+      - [Two](#two)
+        - [Three](#three)
+          - [Four](#four)
+            - [Five](#five)
+              - [Six](#six)
+                - [Twelve](#twelve)
+                  - [Thirteen](#thirteen)
+                    - [Fourteen](#fourteen)
+
+    # One
+
+    ## Two
+
+    ### Three
+
+    #### Four
+
+    ##### Five
+
+    ###### Six
+
+    <a id="seven"></a> **Seven**
+
+    <a id="eight"></a> **Eight**
+
+    <a id="nine"></a> **Nine**
+
+    <a id="ten"></a> **Ten**
+
+    <a id="eleven"></a> **Eleven**
+
+    <a id="twelve"></a> **Twelve**
+
+    <a id="thirteen"></a> **Thirteen**
+
+    <a id="fourteen"></a> **Fourteen**
