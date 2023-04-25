@@ -1,0 +1,46 @@
+name: Merge changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release
+        required: false
+        default: 'auto'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Batch changes
+      uses: miniscruff/changie-action@v1
+      with:
+        args: batch ${{ inputs.version }}
+
+    - name: Merge changes
+      uses: miniscruff/changie-action@v1
+      with:
+        args: merge
+
+    - name: Get the latest version
+      id: latest
+      uses: miniscruff/changie-action@v1
+      with:
+        args: latest
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        title: Release ${{ steps.latest.outputs.output }}
+        branch: release/${{ steps.latest.outputs.output }}
+        commit-message: Release ${{ steps.latest.outputs.output }}
+        token: ${{ secrets.GITHUB_TOKEN }}
