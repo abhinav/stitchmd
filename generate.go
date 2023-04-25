@@ -83,7 +83,7 @@ func (g *generator) renderItem(item markdownItem) error {
 
 func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 	g.addHeadingSep()
-	if err := g.Renderer.Render(g.W, nil, group.Heading.AST); err != nil {
+	if err := g.Renderer.Render(g.W, group.src, group.Heading.AST); err != nil {
 		return err
 	}
 	io.WriteString(g.W, "\n")
