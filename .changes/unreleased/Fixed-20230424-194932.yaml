@@ -1,4 +1,0 @@
-kind: Fixed
-body: For headers too deep to be represented in Markdown, render an anchor and bold
-  text.
-time: 2023-04-24T19:49:32.927734387-07:00
