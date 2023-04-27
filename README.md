@@ -17,8 +17,14 @@
 
 ## Introduction
 
+<div align="center">
+
+[![Logo](doc/images/logo.png)](doc/images/logo.png)
+
 [![CI](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml/badge.svg)](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/abhinav/stitchmd/branch/main/graph/badge.svg?token=MBOK2PHS0X)](https://codecov.io/gh/abhinav/stitchmd)
+
+</div>
 
 stitchmd is a tool that stitches together several Markdown files
 into one large Markdown file,
@@ -27,7 +33,11 @@ making it easier to maintain larger Markdown files.
 It lets you define the layout of your final document in a **summary file**,
 which it then uses to stitch and interlink other Markdown files with.
 
+<div align="center">
+
 ![Flow diagram](doc/images/flow.png)
+
+</div>
 
 See [Getting Started](#getting-started) for a tutorial,
 or [Usage](#usage) to start using it.
