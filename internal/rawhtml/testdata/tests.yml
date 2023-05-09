@@ -1,0 +1,72 @@
+- desc: simple
+  give: |
+    foo <b>bar</b> baz
+  want:
+    - open: "<b>"
+      close: "</b>"
+      middle: "bar"
+
+- desc: multiline
+  give: |
+    Foo <b>
+    bar baz
+    q</b> quux.
+  want:
+    - open: "<b>"
+      close: "</b>"
+      middle: |-
+
+        bar baz
+        q
+
+- desc: nested
+  give: |
+    Foo <b>bar <i>baz</i></b> quux.
+  want:
+    - open: "<b>"
+      close: "</b>"
+      middle: "bar <i>baz</i>"
+    - open: "<i>"
+      close: "</i>"
+      middle: "baz"
+
+- desc: no space
+  give: |
+    click <a href="foo">here</a>.
+  want:
+    - open: >-
+        <a href="foo">
+      close: "</a>"
+      middle: "here"
+
+- desc: non-standard tag
+  give: |
+    hello <mytag>foo</mytag>
+  want:
+    - open: "<mytag>"
+      close: "</mytag>"
+      middle: "foo"
+
+- desc: unmatched closing tag
+  give: |
+    Foo <b>bar baz</i></b> quux.
+  want:
+    - open: "<b>"
+      close: "</b>"
+      middle: "bar baz</i>"
+
+- desc: self-closing
+  give: |
+    Foo <span class="thing">bar<br>baz</span> qux
+  want:
+    - open: '<span class="thing">'
+      close: '</span>'
+      middle: 'bar<br>baz'
+
+- desc: unclosed
+  give: |
+    Foo <span class="thing">bar<b>baz</span> qux
+  want:
+    - open: '<span class="thing">'
+      close: '</span>'
+      middle: 'bar<b>baz'

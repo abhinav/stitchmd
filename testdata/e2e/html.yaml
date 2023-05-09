@@ -1,0 +1,182 @@
+- name: img tag inline
+  give: |
+    - [Foo](in/foo.md)
+  outDir: out
+  files:
+    in/foo.md: |
+      Local: <img src="local/image.png" width="200"/>
+
+      Remote: <img src="https://example.com/image.png" width="300"/>
+  want: |
+    - [Foo](#foo)
+
+    # Foo
+
+    Local: <img src="../in/local/image.png" width="200"/>
+
+    Remote: <img src="https://example.com/image.png" width="300"/>
+
+- name: img tag standalone
+  give: |
+    - [Foo](foo.md)
+  outDir: out
+  files:
+    foo.md: |
+      <img src="local/image.png" width="200"/>
+  want: |
+    - [Foo](#foo)
+
+    # Foo
+
+    <img src="../local/image.png" width="200"/>
+
+- name: img tag inside html block
+  give: |
+    - [Foo](foo.md)
+  outDir: out
+  files:
+    foo.md: |
+      <div>
+        <img src="local/image.png" width="200"/>
+      </div>
+  want: |
+    - [Foo](#foo)
+
+    # Foo
+
+    <div>
+      <img src="../local/image.png" width="200"/>
+    </div>
+
+- name: markdown inside html
+  give: |
+    - [foo](foo.md)
+    - [bar](bar.md)
+  files:
+    foo.md: |
+      # Foo
+
+      <div align="center">
+
+      See also [bar](bar.md).
+
+      </div>
+    bar.md: "# Bar"
+  want: |
+    - [foo](#foo)
+    - [bar](#bar)
+
+    # Foo
+
+    <div align="center">
+
+    See also [bar](#bar).
+
+    </div>
+
+    # Bar
+
+- name: link
+  give: |
+    - [foo](foo.md)
+    - [baz](bar/baz.md)
+  files:
+    foo.md: |
+      # Foo
+
+      Stuff happens here.
+      <a href="bar/baz.md" class="foo">Click here</a> to do stuff.
+    bar/baz.md: |
+      # Baz
+
+      Relates to [Foo](../foo.md).
+  want: |
+    - [foo](#foo)
+    - [baz](#baz)
+
+    # Foo
+
+    Stuff happens here.
+    <a href="#baz" class="foo">Click here</a> to do stuff.
+
+    # Baz
+
+    Relates to [Foo](#foo).
+
+- name: relative link
+  give: |
+    - [Foo](foo.md)
+  outDir: out
+  files:
+    foo.md: |
+      # Foo
+
+      Click <a href="other.md">here</a>.
+  want: |
+    - [Foo](#foo)
+
+    # Foo
+
+    Click <a href="../other.md">here</a>.
+
+- name: table
+  give: |
+    - [Foo](doc/foo.md)
+    - [Qux](qux.md)
+  outDir: out
+  files:
+    qux.md: |
+      # Qux
+
+      Stuff.
+    doc/foo.md: |
+      # Foo
+
+      <table>
+        <thead>
+          <tr>
+            <td>Link</td>
+            <td>Image</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <a href="bar.md">Bar</a> and
+              <a href="../qux.md">Qux</a>
+            </td>
+            <td>
+              <img src="baz.png" width=100 />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  want: |
+    - [Foo](#foo)
+    - [Qux](#qux)
+
+    # Foo
+
+    <table>
+      <thead>
+        <tr>
+          <td>Link</td>
+          <td>Image</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <a href="../doc/bar.md">Bar</a> and
+            <a href="#qux">Qux</a>
+          </td>
+          <td>
+            <img src="../doc/baz.png" width="100"/>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    # Qux
+
+    Stuff.

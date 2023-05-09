@@ -19,7 +19,7 @@
 
 <div align="center">
 
-<img src="doc/images/stitchmd-logo.png" width=300>
+<img src="doc/images/stitchmd-logo.png" width="300"/>
 
 [![CI](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml/badge.svg)](https://github.com/abhinav/stitchmd/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/abhinav/stitchmd/branch/main/graph/badge.svg?token=MBOK2PHS0X)](https://codecov.io/gh/abhinav/stitchmd)

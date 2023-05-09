@@ -19,7 +19,10 @@ import (
 	isatty "github.com/mattn/go-isatty"
 	"github.com/pkg/diff"
 	"github.com/pkg/diff/write"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/rawhtml"
 	"go.abhg.dev/stitchmd/internal/stitch"
 )
 
@@ -186,6 +189,11 @@ func (cmd *mainCmd) run(opts *params) error {
 	}
 
 	mdParser := goldast.DefaultParser()
+	mdParser.AddOptions(
+		parser.WithASTTransformers(
+			util.Prioritized(&rawhtml.Transformer{}, 100),
+		),
+	)
 
 	f := goldast.Parse(mdParser, filename, src)
 	summary, err := stitch.ParseSummary(f)
