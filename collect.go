@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/header"
+	"go.abhg.dev/stitchmd/internal/rawhtml"
 	"go.abhg.dev/stitchmd/internal/stitch"
 	"go.abhg.dev/stitchmd/internal/tree"
 )
@@ -148,6 +149,10 @@ type markdownFileItem struct {
 	// HeadingsByOldID maps IDs of headings, as interpreted in isolation.
 	// The IDs will change once interpreted as part of the combined document.
 	HeadingsByOldID map[string]*markdownHeading
+
+	HTMLPairs  rawhtml.Pairs
+	RawHTMLs   []*ast.RawHTML
+	HTMLBlocks []*ast.HTMLBlock
 }
 
 func (*markdownFileItem) markdownItem() {}
@@ -158,14 +163,17 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		return nil, err
 	}
 
-	f := goldast.Parse(c.Parser, item.Target, src)
+	ctx := parser.NewContext()
+	f := goldast.Parse(c.Parser, item.Target, src, parser.WithContext(ctx))
 	fidgen := header.NewIDGen()
 
 	var (
-		links    []*ast.Link
-		images   []*ast.Image
-		headings []*markdownHeading
-		h1s      []*markdownHeading
+		links      []*ast.Link
+		images     []*ast.Image
+		headings   []*markdownHeading
+		h1s        []*markdownHeading
+		rawHTMLs   []*ast.RawHTML
+		htmlBlocks []*ast.HTMLBlock
 	)
 	headingsByOldID := make(map[string]*markdownHeading)
 	err = goldast.Walk(f.AST, func(n ast.Node) error {
@@ -181,6 +189,10 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 				h1s = append(h1s, mh)
 			}
 			headingsByOldID[mh.OldID] = mh
+		case *ast.RawHTML:
+			rawHTMLs = append(rawHTMLs, n)
+		case *ast.HTMLBlock:
+			htmlBlocks = append(htmlBlocks, n)
 		}
 		return nil
 	})
@@ -196,6 +208,9 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		Images:          images,
 		Headings:        headings,
 		HeadingsByOldID: headingsByOldID,
+		HTMLPairs:       rawhtml.GetPairs(ctx),
+		RawHTMLs:        rawHTMLs,
+		HTMLBlocks:      htmlBlocks,
 	}
 
 	// If the page has only one level 1 heading,

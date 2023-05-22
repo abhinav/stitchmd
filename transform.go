@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/url"
@@ -8,7 +9,12 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+	"go.abhg.dev/container/ring"
+	"go.abhg.dev/stitchmd/internal/goldtext"
+	"go.abhg.dev/stitchmd/internal/rawhtml"
 	"go.abhg.dev/stitchmd/internal/stitch"
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 type transformer struct {
@@ -93,12 +99,133 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 		t.transformImage(fromPath, f, i)
 	}
 
+	src = f.File.Source
+	for _, pair := range f.HTMLPairs {
+		src = t.transformHTMLPair(src, fromPath, f, pair)
+	}
+	for _, h := range f.RawHTMLs {
+		src = t.transformHTML(src, fromPath, f, h.Segments)
+	}
+	for _, h := range f.HTMLBlocks {
+		src = t.transformHTML(src, fromPath, f, h.Lines())
+	}
+	f.File.Source = src
+
 	doc := f.File.AST
 	if doc.ChildCount() > 0 {
 		doc.InsertBefore(doc, doc.FirstChild(), f.Title.AST)
 	} else {
 		doc.AppendChild(doc, f.Title.AST)
 	}
+}
+
+func (t *transformer) transformHTMLPair(src []byte, fromPath string, f *markdownFileItem, pair rawhtml.Pair) []byte {
+	hn, err := pair.ParseHTML(src)
+	if err != nil {
+		return src // leave broken HTML alone
+	}
+
+	if changed := t.transformHTMLNode(fromPath, f, hn); !changed {
+		return src // no changes
+	}
+
+	newPair, newSrc, err := rawhtml.PairFromHTML(hn, src)
+	if err != nil {
+		return src // leave broken HTML alone
+	}
+
+	src = newSrc
+	pair.Open.Parent().ReplaceChild(pair.Open.Parent(), pair.Open, newPair.Open)
+	pair.Close.Parent().ReplaceChild(pair.Close.Parent(), pair.Close, newPair.Close)
+	return src
+}
+
+func (t *transformer) transformHTML(src []byte, fromPath string, f *markdownFileItem, segs *text.Segments) []byte {
+	htmlBodies, err := rawhtml.ParseHTMLFragmentBodies(&goldtext.Reader{
+		Source:   src,
+		Segments: segs,
+	})
+	if err != nil {
+		return src // Don't mess with broken HTML.
+	}
+
+	// Replace all links and images in the HTML.
+	var (
+		roots   []*html.Node
+		changed bool
+	)
+	for _, body := range htmlBodies {
+		for c := body.FirstChild; c != nil; c = c.NextSibling {
+			roots = append(roots, c)
+		}
+	}
+
+	var q ring.Q[*html.Node]
+	for _, n := range roots {
+		q.Push(n)
+	}
+
+	for !q.Empty() {
+		n := q.Pop()
+		changed = t.transformHTMLNode(fromPath, f, n) || changed
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			q.Push(c)
+		}
+	}
+
+	if !changed {
+		return src
+	}
+
+	var buff bytes.Buffer
+	for _, n := range roots {
+		if err := html.Render(&buff, n); err != nil {
+			return src
+		}
+	}
+
+	start := len(src)
+	src = append(src, buff.Bytes()...)
+	end := len(src)
+
+	segs.Clear()
+	segs.Append(text.NewSegment(start, end))
+
+	return src
+}
+
+func (t *transformer) transformHTMLNode(fromPath string, f *markdownFileItem, n *html.Node) (changed bool) {
+	switch n.Type {
+	case html.ElementNode:
+		switch n.DataAtom {
+		case atom.A:
+			for i, attr := range n.Attr {
+				if attr.Key != "href" {
+					continue
+				}
+
+				newURL := t.transformURL(fromPath, f, attr.Val)
+				if newURL != attr.Val {
+					n.Attr[i].Val = newURL
+					changed = true
+				}
+			}
+
+		case atom.Img:
+			for i, attr := range n.Attr {
+				if attr.Key != "src" {
+					continue
+				}
+
+				newURL := t.transformURL(fromPath, f, attr.Val)
+				if newURL != attr.Val {
+					n.Attr[i].Val = newURL
+					changed = true
+				}
+			}
+		}
+	}
+	return changed
 }
 
 func (t *transformer) transformHeading(src []byte, item stitch.Item, h *markdownHeading) []byte {
