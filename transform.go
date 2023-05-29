@@ -33,7 +33,7 @@ type transformer struct {
 	filesByPath map[string]*markdownFileItem
 }
 
-func (t *transformer) Transform(coll *markdownCollection) {
+func (t *transformer) Transform(coll *markdownCollection) error {
 	t.filesByPath = coll.FilesByPath
 	for _, sec := range coll.Sections {
 		offset := t.Offset
@@ -47,11 +47,15 @@ func (t *transformer) Transform(coll *markdownCollection) {
 		}
 		t.sectionOffset = offset
 
-		sec.Items.Walk(func(item markdownItem) error {
+		err := sec.Items.Walk(func(item markdownItem) error {
 			t.transformItem(item)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (t *transformer) transformItem(item markdownItem) {
@@ -195,33 +199,34 @@ func (t *transformer) transformHTML(src []byte, fromPath string, f *markdownFile
 }
 
 func (t *transformer) transformHTMLNode(fromPath string, f *markdownFileItem, n *html.Node) (changed bool) {
-	switch n.Type {
-	case html.ElementNode:
-		switch n.DataAtom {
-		case atom.A:
-			for i, attr := range n.Attr {
-				if attr.Key != "href" {
-					continue
-				}
+	if n.Type != html.ElementNode {
+		return false
+	}
 
-				newURL := t.transformURL(fromPath, f, attr.Val)
-				if newURL != attr.Val {
-					n.Attr[i].Val = newURL
-					changed = true
-				}
+	switch n.DataAtom {
+	case atom.A:
+		for i, attr := range n.Attr {
+			if attr.Key != "href" {
+				continue
 			}
 
-		case atom.Img:
-			for i, attr := range n.Attr {
-				if attr.Key != "src" {
-					continue
-				}
+			newURL := t.transformURL(fromPath, f, attr.Val)
+			if newURL != attr.Val {
+				n.Attr[i].Val = newURL
+				changed = true
+			}
+		}
 
-				newURL := t.transformURL(fromPath, f, attr.Val)
-				if newURL != attr.Val {
-					n.Attr[i].Val = newURL
-					changed = true
-				}
+	case atom.Img:
+		for i, attr := range n.Attr {
+			if attr.Key != "src" {
+				continue
+			}
+
+			newURL := t.transformURL(fromPath, f, attr.Val)
+			if newURL != attr.Val {
+				n.Attr[i].Val = newURL
+				changed = true
 			}
 		}
 	}

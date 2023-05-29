@@ -72,7 +72,7 @@ func segmentsOf(segs ...text.Segment) *text.Segments {
 }
 
 // ParseHTMLFragmentBodies parses fragments of HTML from the given reader.
-// It returns the top-levle nodes of the HTML fragments -- unwrapping
+// It returns the top-level nodes of the HTML fragments -- unwrapping
 // the <html><head></head> tags, yielding the <body>s.
 // That is, the direct children of each returned node hold the contents
 // of the <body> tag.

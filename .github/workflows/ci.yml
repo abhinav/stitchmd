@@ -9,26 +9,22 @@ on:
 jobs:
 
   build:
+    name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        include:
-          - os: ubuntu-latest
-            lint: true
 
     steps:
     - uses: actions/checkout@v3
+      name: Check out repository
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: 1.20.x
         cache: true
-
-    - name: Lint
-      run: make lint
-      if: matrix.lint
 
     - name: Build
       run: make build
@@ -40,3 +36,22 @@ jobs:
 
     - name: Upload coverage
       uses: codecov/codecov-action@v3
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      name: Check out repository
+    - uses: actions/setup-go@v4
+      name: Set up Go
+      with:
+        go-version: 1.20.x
+        cache: false
+    - uses: golangci/golangci-lint-action@v3
+      name: Install golangci-lint
+      with:
+        version: latest
+        args: --version
+    - run: make lint
+      name: Lint

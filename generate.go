@@ -51,16 +51,21 @@ func (g *generator) renderSection(src []byte, sec *markdownSection) error {
 	}
 
 	if !empty {
-		io.WriteString(g.W, "\n\n")
+		if _, err := io.WriteString(g.W, "\n\n"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (g *generator) addHeadingSep() {
+func (g *generator) addHeadingSep() error {
 	if g.headingIdx > 0 {
-		io.WriteString(g.W, "\n")
+		if _, err := io.WriteString(g.W, "\n"); err != nil {
+			return err
+		}
 	}
 	g.headingIdx++
+	return nil
 }
 
 func (g *generator) renderItem(item markdownItem) error {
@@ -82,15 +87,19 @@ func (g *generator) renderItem(item markdownItem) error {
 }
 
 func (g *generator) renderGroupItem(group *markdownGroupItem) error {
-	g.addHeadingSep()
+	if err := g.addHeadingSep(); err != nil {
+		return err
+	}
 	if err := g.Renderer.Render(g.W, group.src, group.Heading.AST); err != nil {
 		return err
 	}
-	io.WriteString(g.W, "\n")
-	return nil
+	_, err := io.WriteString(g.W, "\n")
+	return err
 }
 
 func (g *generator) renderFileItem(file *markdownFileItem) error {
-	g.addHeadingSep()
+	if err := g.addHeadingSep(); err != nil {
+		return err
+	}
 	return g.Renderer.Render(g.W, file.File.Source, file.File.AST)
 }

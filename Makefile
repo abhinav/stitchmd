@@ -8,30 +8,15 @@ SHELL = /bin/bash
 export GOBIN ?= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/bin
 export PATH := $(GOBIN):$(PATH)
 
-MODULES ?= . ./tools
 TEST_FLAGS ?= -race
 
-STATICCHECK = bin/staticcheck
-REVIVE = bin/revive
-REQUIREDFIELD = bin/requiredfield
 STITCHMD = bin/stitchmd
 STITCHMD_ARGS = -o README.md -preface doc/preface.txt doc/README.md
-
-# All known Go files.
-GO_FILES = $(shell find . \
-	   -path '*/.*' -prune -o \
-	   '(' -type f -a -name '*.go' ')' -print)
 
 # Non-test Go files.
 GO_SRC_FILES = $(shell find . \
 	   -path '*/.*' -prune -o \
 	   '(' -type f -a -name '*.go' -a -not -name '*_test.go' ')' -print)
-
-# All known go.mod and go.sum files.
-GO_MOD_FILES = \
-	$(patsubst %,%/go.mod,$(MODULES)) \
-	$(patsubst %,%/go.sum,$(MODULES))
-
 
 .PHONY: all
 all: lint build test
@@ -40,7 +25,7 @@ all: lint build test
 build: $(STITCHMD)
 
 .PHONY: lint
-lint: fmtcheck tidycheck staticcheck readmecheck revive
+lint: tidy-lint readme-lint golangci-lint
 
 .PHONY: test
 test:
@@ -53,26 +38,14 @@ cover:
 
 .PHONY: fmt
 fmt:
-	gofmt -w -s $(GO_FILES)
+	gofumpt -w -s .
 
 .PHONY: readme
 readme: README.md
 
-.PHONY: tidy
-tidy:
-	$(foreach dir,$(MODULES),(cd $(dir) && go mod tidy) &&) true
-
-.PHONY: fmtcheck
-fmtcheck:
-	@DIFF=$$(gofmt -d -s $(GO_FILES)); \
-	if [[ -n "$$DIFF" ]]; then \
-		echo "gofmt would cause changes:"; \
-		echo "$$DIFF"; \
-		false; \
-	fi
-
-.PHONY: readmecheck
-readmecheck: $(STITCHMD)
+.PHONY: readme-lint
+readme-lint: $(STITCHMD)
+	@echo "[lint] Checking README.md."
 	@DIFF=$$($(STITCHMD) -color -d $(STITCHMD_ARGS)); \
 	if [[ -n "$$DIFF" ]]; then \
 		echo "README.md is out of date:"; \
@@ -80,38 +53,26 @@ readmecheck: $(STITCHMD)
 		false; \
 	fi
 
-.PHONY: staticcheck
-staticcheck: $(STATICCHECK)
-	staticcheck ./...
+.PHONY: tidy
+tidy:
+	go mod tidy
 
-.PHONY: revive
-revive: $(REVIVE)
-	revive -set_exit_status ./...
-
-.PHONY: requiredfield
-requiredfield: $(REQUIREDFIELD)
-	go vet -vettool=$(REQUIREDFIELD) ./...
-
-.PHONY: tidycheck
-tidycheck:
-	make tidy
-	@if ! git diff --quiet $(GO_MOD_FILES); then \
-		echo "go mod tidy changed files:" && \
-		git status --porcelain $(GO_MOD_FILES) && \
+.PHONY: tidy-lint
+tidy-lint:
+	@echo "[lint] Checking go.mod files."
+	@go mod tidy -v && \
+	if ! git diff --exit-code go.mod go.sum; then \
+		echo "go.mod files are out of date" && \
 		false; \
 	fi
+
+.PHONY: golangci-lint
+golangci-lint:
+	@echo "[lint] Running golangci-lint."
+	@golangci-lint run
 
 README.md: $(wildcard doc/*) $(STITCHMD)
 	$(STITCHMD) $(STITCHMD_ARGS)
 
 $(STITCHMD): $(GO_SRC_FILES)
 	go build -o $(STITCHMD)
-
-$(STATICCHECK): tools/go.mod
-	cd tools && go install honnef.co/go/tools/cmd/staticcheck
-
-$(REVIVE): tools/go.mod
-	cd tools && go install github.com/mgechev/revive
-
-$(REQUIREDFIELD): tools/go.mod
-	cd tools && go install go.abhg.dev/requiredfield/cmd/requiredfield

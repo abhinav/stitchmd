@@ -22,6 +22,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/stitchmd/internal/goldast"
+	"go.abhg.dev/stitchmd/internal/multierr"
 	"go.abhg.dev/stitchmd/internal/rawhtml"
 	"go.abhg.dev/stitchmd/internal/stitch"
 )
@@ -83,7 +84,7 @@ func (cmd *mainCmd) shouldColor(opts *params) bool {
 	}
 }
 
-func (cmd *mainCmd) run(opts *params) error {
+func (cmd *mainCmd) run(opts *params) (err error) {
 	shouldColor := cmd.shouldColor(opts)
 	if shouldColor {
 		cmd.Stdout = makeColorable(cmd.Stdout)
@@ -99,7 +100,7 @@ func (cmd *mainCmd) run(opts *params) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer multierr.Closef(&err, f, "close %q", opts.Input)
 		input = f
 	}
 
@@ -146,7 +147,11 @@ func (cmd *mainCmd) run(opts *params) error {
 			if err != nil {
 				return fmt.Errorf("-diff: %w", err)
 			}
-			defer dw.Diff(cmd.Stdout)
+			defer func() {
+				if err := dw.Diff(cmd.Stdout); err != nil {
+					log.Printf("Error writing diff: %v", err)
+				}
+			}()
 			output = dw
 		} else {
 			outDir := filepath.Dir(opts.Output)
@@ -158,7 +163,7 @@ func (cmd *mainCmd) run(opts *params) error {
 			if err != nil {
 				return fmt.Errorf("create output: %w", err)
 			}
-			defer f.Close()
+			defer multierr.Closef(&err, f, "close %q", opts.Output)
 			output = f
 		}
 	}
@@ -211,11 +216,14 @@ func (cmd *mainCmd) run(opts *params) error {
 		return errors.New("error reading markdown")
 	}
 
-	(&transformer{
+	tform := &transformer{
 		Log:          log,
 		Offset:       opts.Offset,
 		InputRelPath: filepath.ToSlash(inputRel),
-	}).Transform(coll)
+	}
+	if err := tform.Transform(coll); err != nil {
+		return fmt.Errorf("transform: %w", err)
+	}
 
 	render := mdfmt.NewRenderer()
 	render.AddMarkdownOptions(

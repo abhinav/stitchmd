@@ -47,7 +47,7 @@ func TestCollector_unknownItemType(t *testing.T) {
 	}
 
 	assert.Panics(t, func() {
-		(&collector{
+		_, _ = (&collector{
 			Parser: goldast.DefaultParser(),
 			FS:     make(fstest.MapFS),
 		}).Collect(fixedPositioner{Line: 1, Column: 1}, summary)

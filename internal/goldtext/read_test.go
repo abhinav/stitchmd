@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
+//nolint:tparallel // shared state in subtests
 func TestReader_empty(t *testing.T) {
 	t.Parallel()
 
