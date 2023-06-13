@@ -23,7 +23,8 @@ var _ parser.ASTTransformer = (*Transformer)(nil)
 
 // Transform transforms a Markdown document.
 func (t *Transformer) Transform(doc *ast.Document, reader text.Reader, pc parser.Context) {
-	(&transform{
+	// Ignore errors; do a best effort transformation.
+	_ = (&transform{
 		Context: pc,
 		Reader:  reader,
 	}).Transform(doc)

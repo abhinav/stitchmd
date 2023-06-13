@@ -11,6 +11,7 @@ import (
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/container/ring"
 	"go.abhg.dev/stitchmd/internal/goldtext"
+	"go.abhg.dev/stitchmd/internal/must"
 	"go.abhg.dev/stitchmd/internal/rawhtml"
 	"go.abhg.dev/stitchmd/internal/stitch"
 	"golang.org/x/net/html"
@@ -47,10 +48,14 @@ func (t *transformer) Transform(coll *markdownCollection) {
 		}
 		t.sectionOffset = offset
 
-		sec.Items.Walk(func(item markdownItem) error {
+		err := sec.Items.Walk(func(item markdownItem) error {
 			t.transformItem(item)
 			return nil
 		})
+
+		// The function returns nil, not an error.
+		// If this fails, something went seriously wrong.
+		must.NotErrorf(err, "Error transforming section")
 	}
 }
 

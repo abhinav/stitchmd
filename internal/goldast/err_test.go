@@ -9,6 +9,8 @@ import (
 )
 
 func TestErrorList(t *testing.T) {
+	t.Parallel()
+
 	info := fakeInfo(func(offset int) Position {
 		switch offset {
 		case 42:
@@ -57,6 +59,8 @@ func TestErrorList(t *testing.T) {
 }
 
 func TestPosError(t *testing.T) {
+	t.Parallel()
+
 	wrapped := errors.New("great sadness")
 	posErr := &posError{Offset: 42, Err: wrapped}
 

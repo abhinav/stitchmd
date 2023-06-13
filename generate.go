@@ -6,6 +6,7 @@ import (
 	"log"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
+	"github.com/yuin/goldmark/ast"
 )
 
 type generator struct {
@@ -35,30 +36,29 @@ func (g *generator) Generate(src []byte, coll *markdownCollection) error {
 }
 
 func (g *generator) renderSection(src []byte, sec *markdownSection) error {
-	empty := true
+	var nodes []ast.Node
 	if t := sec.Title; t != nil {
-		empty = false
-		if err := g.Renderer.Render(g.W, src, t); err != nil {
-			return err
-		}
+		nodes = append(nodes, t)
 	}
-
 	if !g.NoTOC {
-		empty = false
-		if err := g.Renderer.Render(g.W, src, sec.TOCItems); err != nil {
+		nodes = append(nodes, sec.TOCItems)
+	}
+
+	for _, n := range nodes {
+		if err := g.Renderer.Render(g.W, src, n); err != nil {
 			return err
 		}
 	}
 
-	if !empty {
-		io.WriteString(g.W, "\n\n")
+	if len(nodes) > 0 {
+		_, _ = io.WriteString(g.W, "\n\n")
 	}
 	return nil
 }
 
 func (g *generator) addHeadingSep() {
 	if g.headingIdx > 0 {
-		io.WriteString(g.W, "\n")
+		_, _ = io.WriteString(g.W, "\n")
 	}
 	g.headingIdx++
 }
@@ -86,7 +86,7 @@ func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 	if err := g.Renderer.Render(g.W, group.src, group.Heading.AST); err != nil {
 		return err
 	}
-	io.WriteString(g.W, "\n")
+	_, _ = io.WriteString(g.W, "\n")
 	return nil
 }
 

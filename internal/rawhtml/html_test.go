@@ -190,7 +190,7 @@ func FuzzGoldmarkRawHTML(f *testing.F) {
 
 		p := goldmark.DefaultParser()
 		doc := p.Parse(text.NewReader(src))
-		ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if !entering {
 				return ast.WalkContinue, nil
 			}
@@ -210,6 +210,7 @@ func FuzzGoldmarkRawHTML(f *testing.F) {
 
 			return ast.WalkContinue, nil
 		})
+		require.NoError(t, err)
 	})
 }
 
