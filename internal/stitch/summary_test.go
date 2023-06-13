@@ -171,7 +171,7 @@ func TestParseSummary(t *testing.T) {
 					sec.Title.AST = nil
 				}
 
-				sec.Items.Walk(func(n Item) error {
+				err := sec.Items.Walk(func(n Item) error {
 					switch i := n.(type) {
 					case *LinkItem:
 						i.AST = nil
@@ -182,6 +182,7 @@ func TestParseSummary(t *testing.T) {
 					}
 					return nil
 				})
+				require.NoError(t, err)
 			}
 
 			assert.Equal(t, tt.want, got)

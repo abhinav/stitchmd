@@ -154,8 +154,8 @@ func TestMain_shouldColor(t *testing.T) {
 
 	pty, tty, err := pty.Open()
 	require.NoError(t, err)
-	defer pty.Close()
-	defer tty.Close()
+	t.Cleanup(func() { assert.NoError(t, pty.Close(), "close pty") })
+	t.Cleanup(func() { assert.NoError(t, tty.Close(), "close tty") })
 
 	tests := []struct {
 		desc   string
@@ -206,6 +206,8 @@ func TestMain_shouldColor(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			if tt.stdout == nil {
 				tt.stdout = io.Discard
 			}
@@ -276,7 +278,8 @@ func TestDiffWriter(t *testing.T) {
 		w, err := newDiffWriter("does-not-exist.md", false)
 		require.NoError(t, err)
 
-		io.WriteString(w, "hello world")
+		_, err = io.WriteString(w, "hello world")
+		assert.NoError(t, err)
 
 		var buf bytes.Buffer
 		assert.NoError(t, w.Diff(&buf))
@@ -294,7 +297,8 @@ func TestDiffWriter(t *testing.T) {
 		w, err := newDiffWriter(path, false)
 		require.NoError(t, err)
 
-		io.WriteString(w, "hello\nbar")
+		_, err = io.WriteString(w, "hello\nbar")
+		require.NoError(t, err)
 
 		var buf bytes.Buffer
 		assert.NoError(t, w.Diff(&buf))
@@ -313,7 +317,8 @@ func TestDiffWriter(t *testing.T) {
 		w, err := newDiffWriter(path, false)
 		require.NoError(t, err)
 
-		io.WriteString(w, "hello world")
+		_, err = io.WriteString(w, "hello world")
+		require.NoError(t, err)
 
 		var buf bytes.Buffer
 		assert.NoError(t, w.Diff(&buf))
