@@ -1,6 +1,8 @@
 module go.abhg.dev/stitchmd
 
-go 1.20
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
@@ -17,9 +19,10 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 )
