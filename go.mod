@@ -14,7 +14,7 @@ require (
 	github.com/yuin/goldmark v1.5.6
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.1.0
-	golang.org/x/net v0.16.0
+	golang.org/x/net v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
