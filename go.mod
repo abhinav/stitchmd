@@ -8,7 +8,7 @@ require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
 	github.com/creack/pty v1.1.18
 	github.com/mattn/go-colorable v0.1.13
-	github.com/mattn/go-isatty v0.0.19
+	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e
 	github.com/stretchr/testify v1.8.4
 	github.com/yuin/goldmark v1.5.6
