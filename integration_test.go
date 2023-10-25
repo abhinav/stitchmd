@@ -25,6 +25,12 @@ func TestIntegration_e2e(t *testing.T) {
 		Offset  int    `yaml:"offset"`  // -offset
 		NoTOC   bool   `yaml:"no-toc"`  // -no-toc
 		Preface string `yaml:"preface"` // -preface
+		Unsafe  bool   `yaml:"unsafe"`  // -unsafe
+
+		// Directory to run the command in.
+		// summary and preface are stored in this directory.
+		// Other files are stored in the paths they specify.
+		Dir string `yaml:"dir"`
 
 		// Path to the output directory,
 		// relative to the test directory.
@@ -46,19 +52,24 @@ func TestIntegration_e2e(t *testing.T) {
 			t.Parallel()
 
 			dir := t.TempDir()
+			cwd := dir
+			if tt.Dir != "" {
+				cwd = filepath.Join(dir, tt.Dir)
+				require.NoError(t, os.MkdirAll(cwd, 0o755))
+			}
 
-			input := filepath.Join(dir, "summary.md")
+			input := filepath.Join(cwd, "summary.md")
 			require.NoError(t, os.WriteFile(input, []byte(tt.Give), 0o644))
 
-			output := filepath.Join(dir, "output.md")
+			output := filepath.Join(cwd, "output.md")
 			if tt.OutDir != "" {
 				outDir := filepath.FromSlash(tt.OutDir)
-				output = filepath.Join(dir, outDir, "output.md")
+				output = filepath.Join(cwd, outDir, "output.md")
 			}
 
 			var preface string
 			if tt.Preface != "" {
-				preface = filepath.Join(dir, "preface.md")
+				preface = filepath.Join(cwd, "preface.md")
 				require.NoError(t, os.WriteFile(preface, []byte(tt.Preface), 0o644))
 			}
 
@@ -92,6 +103,7 @@ func TestIntegration_e2e(t *testing.T) {
 				Offset:  tt.Offset,
 				NoTOC:   tt.NoTOC,
 				Preface: preface,
+				Unsafe:  tt.Unsafe,
 			}))
 
 			got, err := os.ReadFile(output)
@@ -193,10 +205,19 @@ func TestIntegration_errors(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
-		Name  string            `yaml:"name"`
-		Give  string            `yaml:"give"`
+		Name string `yaml:"name"`
+
+		// Summary file contents.
+		Give string `yaml:"give"`
+
+		// Directory to run the command in.
+		Dir string `yaml:"dir"`
+
+		// Files to create in the test directory.
 		Files map[string]string `yaml:"files,omitempty"`
-		Want  []string          `yaml:"want"`
+
+		// Expected error messages.
+		Want []string `yaml:"want"`
 	}
 
 	groups := decodeTestGroups[testCase](t, "testdata/errors.yaml")
@@ -216,8 +237,13 @@ func TestIntegration_errors(t *testing.T) {
 			require.NotEmpty(t, tt.Want, "test case must have at least one error")
 
 			dir := t.TempDir()
+			cwd := dir
+			if tt.Dir != "" {
+				cwd = filepath.Join(dir, tt.Dir)
+				require.NoError(t, os.MkdirAll(cwd, 0o755))
+			}
 
-			input := filepath.Join(dir, "summary.md")
+			input := filepath.Join(cwd, "summary.md")
 			require.NoError(t, os.WriteFile(input, []byte(tt.Give), 0o644))
 
 			for filename, content := range tt.Files {
@@ -238,7 +264,7 @@ func TestIntegration_errors(t *testing.T) {
 				Stdout: &stdout,
 				Stderr: &stderr,
 				Getwd: func() (string, error) {
-					return dir, nil
+					return cwd, nil
 				},
 				Getenv: nopGetenv,
 			}

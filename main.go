@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -207,8 +208,13 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 		return errors.New("error parsing summary")
 	}
 
+	collectFS := os.DirFS(inputDir)
+	if opts.Unsafe {
+		collectFS = unsafeDirFS(inputDir)
+	}
+
 	coll, err := (&collector{
-		FS:     os.DirFS(inputDir),
+		FS:     collectFS,
 		Parser: mdParser,
 	}).Collect(f.Info, summary)
 	if err != nil {
@@ -235,6 +241,16 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 		NoTOC:    opts.NoTOC,
 	}
 	return g.Generate(f.Source, coll)
+}
+
+// unsafeDirFS is a minimal FS implementation
+// that supports unguarded access to the filesystem.
+type unsafeDirFS string
+
+var _ fs.FS = unsafeDirFS("")
+
+func (dir unsafeDirFS) Open(name string) (fs.File, error) {
+	return os.Open(filepath.Join(string(dir), name))
 }
 
 // diffWriter is an io.Writer that buffers the input

@@ -63,3 +63,20 @@
     # Hello
 
     # World
+
+- name: unsafe
+  unsafe: true
+  give: |
+    - [A](a.md)
+    - [B](../b.md)
+  files:
+    foo/a.md: '# A'
+    b.md: '# B'
+  dir: foo
+  want: |
+    - [A](#a)
+    - [B](#b)
+
+    # A
+
+    # B
