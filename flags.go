@@ -24,6 +24,7 @@ type params struct {
 	Dir     string
 	Offset  int
 	NoTOC   bool
+	Unsafe  bool
 
 	Diff        bool
 	ColorOutput colorOutput
@@ -54,6 +55,7 @@ func (p *cliParser) newFlagSet() (*params, *flag.FlagSet) {
 	flag.Var(&opts.ColorOutput, "color", "")
 	flag.BoolVar(&opts.Diff, "d", false, "")
 	flag.BoolVar(&opts.Diff, "diff", false, "")
+	flag.BoolVar(&opts.Unsafe, "unsafe", false, "")
 
 	flag.BoolVar(&p.version, "version", false, "")
 	flag.BoolVar(&p.help, "help", false, "")

@@ -11,3 +11,15 @@
     baz.md: '# Baz'
   want:
     - "2:3:external link cannot have children"
+
+- name: parent file not allowed
+  give: |
+    - [A](a.md)
+    - [B](../b.md)
+  files:
+    foo/a.md: '# A'
+    b.md: '# B'
+  dir: foo
+  want:
+    - invalid path name "../b.md"
+    - did you mean to use -unsafe

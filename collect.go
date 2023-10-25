@@ -160,6 +160,14 @@ func (*markdownFileItem) markdownItem() {}
 func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, error) {
 	src, err := fs.ReadFile(c.FS, item.Target)
 	if err != nil {
+		// If the error is because the path name was not valid,
+		// it likely contains "." or ".." components,
+		// or has a "/" at the start or end of the path.
+		// Provide a hint to the user.
+		if errors.Is(err, fs.ErrInvalid) {
+			return nil, fmt.Errorf("invalid path name %q; did you mean to use -unsafe?", item.Target)
+		}
+
 		return nil, err
 	}
 

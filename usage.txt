@@ -24,6 +24,8 @@ OPTIONS
 	This is valid only if -o is also specified.
   -color [always|never|auto]
 	whether to use color in the command output. Defaults to 'auto'.
+  -unsafe
+	allow unsafe file references.
   -version
 	print version information.
   -h, -help
