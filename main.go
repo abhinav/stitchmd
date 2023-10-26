@@ -216,6 +216,7 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 	coll, err := (&collector{
 		FS:     collectFS,
 		Parser: mdParser,
+		Stack:  []string{filename},
 	}).Collect(f.Info, summary)
 	if err != nil {
 		log.Println(err)
@@ -226,6 +227,7 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 		Log:          log,
 		Offset:       opts.Offset,
 		InputRelPath: filepath.ToSlash(inputRel),
+		SummaryFile:  f,
 	}).Transform(coll)
 
 	render := mdfmt.NewRenderer()

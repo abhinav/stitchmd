@@ -1,0 +1,235 @@
+- name: simple
+  give: |
+    - [Foo](foo.md)
+    - ![Bar](bar.md)
+    - [Quux](quux.md)
+  files:
+    foo.md: "# Foo"
+    bar.md: |
+      - [Baz](baz.md)
+      - [Qux](qux.md)
+    baz.md: |
+      # Baz
+
+      Hello
+    qux.md: |
+      # Qux
+
+      World
+    quux.md: |
+      Stuff
+  want: |
+    - [Foo](#foo)
+    - [Bar](#bar)
+      - [Baz](#baz)
+      - [Qux](#qux)
+    - [Quux](#quux)
+
+    # Foo
+
+    # Bar
+
+    ## Baz
+
+    Hello
+
+    ## Qux
+
+    World
+
+    # Quux
+
+    Stuff
+
+- name: nested
+  give: |
+    - ![Foo](foo.md)
+  files:
+    foo.md: |
+      - ![Bar](bar.md)
+    bar.md: |
+      - ![Baz](baz.md)
+    baz.md: |
+      - [Qux](qux.md)
+    qux.md: |
+      Hello world
+  want: |
+    - [Foo](#foo)
+      - [Bar](#bar)
+        - [Baz](#baz)
+          - [Qux](#qux)
+
+    # Foo
+
+    ## Bar
+
+    ### Baz
+
+    #### Qux
+
+    Hello world
+
+- name: heading repeats
+  give: |
+    - ![Foo](foo.md)
+    - ![Foo](foo.md)
+    - ![Foo](foo.md)
+  files:
+    foo.md: |
+      - Bar
+        - [Baz](baz.md)
+    baz.md: |
+      # Baz
+  want: |
+    - [Foo](#foo)
+      - [Bar](#bar)
+        - [Baz](#baz)
+    - [Foo](#foo-1)
+      - [Bar](#bar-1)
+        - [Baz](#baz-1)
+    - [Foo](#foo-2)
+      - [Bar](#bar-2)
+        - [Baz](#baz-2)
+
+    # Foo
+
+    ## Bar
+
+    ### Baz
+
+    # Foo
+
+    ## Bar
+
+    ### Baz
+
+    # Foo
+
+    ## Bar
+
+    ### Baz
+
+- name: subdir paths
+  # Paths for the included summary
+  # are relative to that directory.
+  give: |
+    - ![CLI](cli/summary.md)
+  files:
+    cli/summary.md: |
+      - [Installation](install.md)
+      - [Usage](usage.md)
+    cli/install.md: |
+      How to install the CLI.
+    cli/usage.md: |
+      How to use the CLI.
+  want: |
+    - [CLI](#cli)
+      - [Installation](#installation)
+      - [Usage](#usage)
+
+    # CLI
+
+    ## Installation
+
+    How to install the CLI.
+
+    ## Usage
+
+    How to use the CLI.
+
+- name: subdir import parent
+  # An included summary in a subdirectory
+  # should be able to import a document in the parent.
+  give: |
+    - ![CLI](cli/summary.md)
+  files:
+    cli/summary.md: |
+      - [Installation](../install.md)
+      - [Usage](usage.md)
+    install.md: |
+      How to install the application.
+    cli/usage.md: |
+      How to use the CLI.
+  want: |
+    - [CLI](#cli)
+      - [Installation](#installation)
+      - [Usage](#usage)
+
+    # CLI
+
+    ## Installation
+
+    How to install the application.
+
+    ## Usage
+
+    How to use the CLI.
+
+- name: duplicate embeds
+  # Should be able to include the same summary multiple times.
+  give: |
+    - ![Left](left.md)
+    - ![Right](right.md)
+  files:
+    left.md: |
+      - ![Foo](foo.md)
+    right.md: |
+      - ![Foo](foo.md)
+    foo.md: |
+      - [Bar](bar.md)
+    bar.md: |
+      # Bar
+
+      Hello
+  want: |
+    - [Left](#left)
+      - [Foo](#foo)
+        - [Bar](#bar)
+    - [Right](#right)
+      - [Foo](#foo-1)
+        - [Bar](#bar-1)
+
+    # Left
+
+    ## Foo
+
+    ### Bar
+
+    Hello
+
+    # Right
+
+    ## Foo
+
+    ### Bar
+
+    Hello
+
+- name: embed heading
+  # Embeds section titles are used.
+  give: |
+    - ![Using the UI](ui/summary.md)
+  files:
+    ui/summary.md: |
+      # How to use the UI
+
+      - [Installation](install.md)
+      - [Usage](usage.md)
+    ui/install.md: |
+      Install the program.
+    ui/usage.md: |
+      Start the program.
+  want: |
+    - [Using the UI](#how-to-use-the-ui)
+      - [Installation](#installation)
+      - [Usage](#usage)
+
+    # How to use the UI
+
+    ## Installation
+
+    Install the program.
+
+    ## Usage
+
+    Start the program.

@@ -1,0 +1,86 @@
+- name: does not exist
+  give: |
+    - ![Bar](foo/bar.md)
+  want:
+    - "1:3:open"
+    - "no such file or directory"
+
+- name: external link no children
+  give: |
+    - ![Bar](foo/bar.md)
+  files:
+    foo/bar.md: |
+      - hi
+        - [bar](https://example.com)
+          - [baz](baz.md)
+    foo/baz.md: '# Baz'
+  want:
+    - "1:3:foo/bar.md:2:5:external link"
+
+- name: empty embed
+  give: |
+    - Foo
+      - ![Bar](bar.md)
+  files:
+    bar.md: |
+  want:
+    - "2:5:bar.md:1:1:no sections found"
+
+- name: children
+  give: |
+    - ![Foo](foo.md)
+      - [Bar](bar.md)
+  files:
+    foo.md: |
+      - [Bar](bar.md)
+    bar.md: |
+      # Bar
+  want:
+    - summary.md:1:3:embed cannot have children
+
+- name: too many sections
+  give: |
+    - ![Foo](foo.md)
+  files:
+    foo.md: |
+      # A
+
+      - [Bar](bar.md)
+      - [Baz](baz.md)
+
+      # B
+
+      - [Bar](bar.md)
+      - [Baz](baz.md)
+    bar.md: ""
+    baz.md: ""
+  want:
+    - "1:3:foo.md:6:3:unexpected section; expected only one section"
+
+- name: cycle
+  give: |
+    - ![Foo](foo.md)
+  files:
+    foo.md: |
+      - ![Bar](bar.md)
+    bar.md: |
+      - ![Baz](baz.md)
+    baz.md: |
+      - ![Foo](foo.md)
+  want:
+    - "embed cycle:"
+    - "foo.md -> bar.md -> baz.md -> foo.md"
+
+- name: cycle parent path
+  give: |
+    - ![Foo](a/foo.md)
+  files:
+    a/foo.md: |
+      - ![Bar](b/bar.md)
+    a/b/bar.md: |
+      - ![Baz](c/baz.md)
+    a/b/c/baz.md: |
+      - ![Foo](../../foo.md)
+  want:
+    - "embed cycle:"
+    - "a/foo.md -> a/b/bar.md -> a/b/c/baz.md -> a/foo.md"

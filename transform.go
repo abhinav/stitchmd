@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/container/ring"
+	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/goldtext"
 	"go.abhg.dev/stitchmd/internal/must"
 	"go.abhg.dev/stitchmd/internal/rawhtml"
@@ -27,6 +28,8 @@ type transformer struct {
 
 	// Flat heading offset for all headings.
 	Offset int
+
+	SummaryFile *goldast.File
 
 	// Heading offset for the current section.
 	sectionOffset int
@@ -67,9 +70,84 @@ func (t *transformer) transformItem(item markdownItem) {
 		t.transformFile(item)
 	case *markdownExternalLinkItem:
 		// Nothing to do.
+	case *markdownEmbedItem:
+		t.transformEmbed(item)
 	default:
 		panic(fmt.Sprintf("unknown item type: %T", item))
 	}
+}
+
+func (t *transformer) transformEmbed(embed *markdownEmbedItem) {
+	(&transformer{
+		Log:          t.Log,
+		InputRelPath: t.InputRelPath,
+		Offset:       t.Offset + embed.Heading.Level(),
+		SummaryFile:  embed.SummaryFile,
+	}).Transform(&markdownCollection{
+		Sections:    []*markdownSection{embed.Section},
+		FilesByPath: embed.FilesByPath,
+	})
+
+	embed.src = t.transformHeading(embed.src, embed.Item, embed.Heading)
+
+	// Replace ![foo](foo.md) with [foo](#foo).
+	item := embed.Item.AST
+	parent := item.Parent()
+
+	link := ast.NewLink()
+	link.Destination = []byte("#" + embed.Heading.ID)
+	parent.ReplaceChild(parent, item, link)
+	for c := item.FirstChild(); c != nil; c = c.NextSibling() {
+		link.AppendChild(link, c)
+	}
+
+	cloneSegment := func(seg text.Segment) text.Segment {
+		bs := seg.Value(embed.SummaryFile.Source)
+
+		seg.Start = len(t.SummaryFile.Source)
+		t.SummaryFile.Source = append(t.SummaryFile.Source, bs...)
+		seg.Stop = len(t.SummaryFile.Source)
+		return seg
+	}
+
+	cloneSegments := func(segs *text.Segments) {
+		for i := 0; i < segs.Len(); i++ {
+			seg := segs.At(i)
+			segs.Set(i, cloneSegment(seg))
+		}
+	}
+
+	// We need to nest the TOC items of the embedded section
+	// under the current section's list item.
+	// However, those reference source positions in the other summary file.
+	// They need to be appended to this summary file's source.
+	//
+	// This isn't super efficient because
+	// it'll copy the bytes for each level of nesting.
+	// But it's good enough for now.
+	_ = ast.Walk(embed.Section.TOCItems, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch n := n.(type) {
+		case *ast.HTMLBlock:
+			n.ClosureLine = cloneSegment(n.ClosureLine)
+		case *ast.RawHTML:
+			cloneSegments(n.Segments)
+		case *ast.Text:
+			n.Segment = cloneSegment(n.Segment)
+		}
+
+		if n.Type() == ast.TypeBlock {
+			cloneSegments(n.Lines())
+		}
+
+		return ast.WalkContinue, nil
+	})
+	// Part of a bigger whole now. The row below must not be blank.
+	embed.Section.TOCItems.SetBlankPreviousLines(false)
+	parent.AppendChild(parent, embed.Section.TOCItems)
 }
 
 func (t *transformer) transformGroup(group *markdownGroupItem) {

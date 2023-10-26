@@ -108,6 +108,12 @@ func (p *itemTreeParser) parseItem(li *ast.ListItem) {
 	switch n := n.(type) {
 	case *ast.Link:
 		item = p.parseLinkItem(n)
+		// TODO: separate link and external link?
+		// TODO: external link can't have children validation should be
+		// here
+	case *ast.Image:
+		item = p.parseEmbedItem(n)
+		// TODO: embed can't have children
 	case *ast.Text:
 		item = p.parseTextItem(n, children != nil)
 	default:
@@ -163,6 +169,51 @@ func (i *LinkItem) ItemDepth() int {
 // Node reports the underlying AST node
 // that this item was parsed from.
 func (i *LinkItem) Node() ast.Node {
+	return i.AST
+}
+
+// EmbedItem is a reference to another summary file
+// intended to be nested in the table of contents.
+//
+//	![Foo](foo.md)
+type EmbedItem struct {
+	// Title of the link.
+	// This is the text inside the "[..]" section.
+	Text string
+
+	// Target is the destination of this item.
+	// This is the text inside the "(..)" section of the link.
+	// It's /-separated, even on Windows.
+	Target string
+
+	// Depth is the depth of this item in the table of contents.
+	Depth int
+
+	// AST holds the original node.
+	AST ast.Node
+}
+
+var _ Item = (*EmbedItem)(nil)
+
+func (p *itemTreeParser) parseEmbedItem(embed *ast.Image) *EmbedItem {
+	return &EmbedItem{
+		Text:   string(embed.Text(p.src)),
+		Target: filepath.ToSlash(string(embed.Destination)),
+		Depth:  p.depth,
+		AST:    embed,
+	}
+}
+
+func (*EmbedItem) item() {}
+
+// ItemDepth reports the depth of this embed request in the TOC.
+func (i *EmbedItem) ItemDepth() int {
+	return i.Depth
+}
+
+// Node returns the original AST node in the summary file
+// that this item is built from.
+func (i *EmbedItem) Node() ast.Node {
 	return i.AST
 }
 

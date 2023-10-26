@@ -220,7 +220,7 @@ func TestIntegration_errors(t *testing.T) {
 		Want []string `yaml:"want"`
 	}
 
-	groups := decodeTestGroups[testCase](t, "testdata/errors.yaml")
+	groups := decodeTestGroups[testCase](t, "testdata/errors/*.yaml")
 	var tests []testCase
 	for _, group := range groups {
 		for _, tt := range group.Tests {
