@@ -1,3 +1,0 @@
-kind: Added
-body: Summary files now support including other summary files with the syntax `![Title](file.md)`.
-time: 2023-11-06T21:38:17.690154214-08:00
