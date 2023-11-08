@@ -1,4 +1,0 @@
-kind: Fixed
-body: Fix included summaries not adjusting item heading levels based on the include's
-  position in the list.
-time: 2023-11-08T05:34:42.906980434-08:00
