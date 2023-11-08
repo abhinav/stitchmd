@@ -158,16 +158,8 @@ type markdownFileItem struct {
 func (*markdownFileItem) markdownItem() {}
 
 func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, error) {
-	src, err := fs.ReadFile(c.FS, item.Target)
+	src, err := c.readFile(item.Target)
 	if err != nil {
-		// If the error is because the path name was not valid,
-		// it likely contains "." or ".." components,
-		// or has a "/" at the start or end of the path.
-		// Provide a hint to the user.
-		if errors.Is(err, fs.ErrInvalid) {
-			return nil, fmt.Errorf("invalid path name %q; did you mean to use -unsafe?", item.Target)
-		}
-
 		return nil, err
 	}
 
@@ -301,4 +293,20 @@ func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Headi
 
 func (h *markdownHeading) Level() int {
 	return h.Lvl
+}
+
+// readFile reads a file from the underlying filesystem.
+func (c *collector) readFile(path string) ([]byte, error) {
+	src, err := fs.ReadFile(c.FS, path)
+	if err != nil {
+		// If the error is because the path name was not valid,
+		// it likely contains "." or ".." components,
+		// or has a "/" at the start or end of the path.
+		// Provide a hint to the user.
+		if errors.Is(err, fs.ErrInvalid) {
+			return nil, fmt.Errorf("invalid path %q; did you mean to use -unsafe?", path)
+		}
+		return nil, err
+	}
+	return src, nil
 }
