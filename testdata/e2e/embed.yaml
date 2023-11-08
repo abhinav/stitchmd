@@ -233,3 +233,105 @@
     ## Usage
 
     Start the program.
+
+- name: heading levels
+  give: |
+    - Level 1
+      - ![Foo](foo.md)
+      - Level 2
+        - ![Foo](foo.md)
+        - Level 3
+          - ![Foo](foo.md)
+  files:
+    foo.md: |
+      - [Bar](bar.md)
+    bar.md: |
+      # Bar
+
+      ## Baz
+  want: |
+    - [Level 1](#level-1)
+      - [Foo](#foo)
+        - [Bar](#bar)
+      - [Level 2](#level-2)
+        - [Foo](#foo-1)
+          - [Bar](#bar-1)
+        - [Level 3](#level-3)
+          - [Foo](#foo-2)
+            - [Bar](#bar-2)
+
+    # Level 1
+
+    ## Foo
+
+    ### Bar
+
+    #### Baz
+
+    ## Level 2
+
+    ### Foo
+
+    #### Bar
+
+    ##### Baz
+
+    ### Level 3
+
+    #### Foo
+
+    ##### Bar
+
+    ###### Baz
+
+- name: heading levels with section header
+  give: |
+    - Level 1
+      - ![Foo](foo.md)
+      - Level 2
+        - ![Foo](foo.md)
+        - Level 3
+          - ![Foo](foo.md)
+  files:
+    foo.md: |
+      ## Foo
+
+      - [Bar](bar.md)
+    bar.md: |
+      # Bar
+
+      ## Baz
+  want: |
+    - [Level 1](#level-1)
+      - [Foo](#foo)
+        - [Bar](#bar)
+      - [Level 2](#level-2)
+        - [Foo](#foo-1)
+          - [Bar](#bar-1)
+        - [Level 3](#level-3)
+          - [Foo](#foo-2)
+            - [Bar](#bar-2)
+
+    # Level 1
+
+    ## Foo
+
+    ### Bar
+
+    #### Baz
+
+    ## Level 2
+
+    ### Foo
+
+    #### Bar
+
+    ##### Baz
+
+    ### Level 3
+
+    #### Foo
+
+    ##### Bar
+
+    ###### Baz

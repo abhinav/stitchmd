@@ -81,7 +81,7 @@ func (t *transformer) transformEmbed(embed *markdownEmbedItem) {
 	(&transformer{
 		Log:          t.Log,
 		InputRelPath: t.InputRelPath,
-		Offset:       t.Offset + embed.Heading.Level(),
+		Offset:       t.sectionOffset + embed.Item.ItemDepth() + 1,
 		SummaryFile:  embed.SummaryFile,
 	}).Transform(&markdownCollection{
 		Sections:    []*markdownSection{embed.Section},
