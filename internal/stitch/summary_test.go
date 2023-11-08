@@ -36,6 +36,17 @@ func TestParseSummary(t *testing.T) {
 		}
 	}
 
+	embedItem := func(depth int, text, dest string, children ...*tree.Node[Item]) *tree.Node[Item] {
+		return &tree.Node[Item]{
+			Value: &EmbedItem{
+				Text:   text,
+				Target: dest,
+				Depth:  depth,
+			},
+			List: tree.List[Item](children),
+		}
+	}
+
 	section := func(lvl int, title string, items ...*tree.Node[Item]) *Section {
 		var stitle *SectionTitle
 		if len(title) > 0 {
@@ -152,6 +163,13 @@ func TestParseSummary(t *testing.T) {
 				section(0, "", linkItem(0, "foo", "https://example.com")),
 			),
 		},
+		{
+			desc: "embed link",
+			give: "- ![foo](foo.md)",
+			want: toc(
+				section(0, "", embedItem(0, "foo", "foo.md")),
+			),
+		},
 	}
 
 	for _, tt := range tests {
@@ -176,6 +194,8 @@ func TestParseSummary(t *testing.T) {
 					case *LinkItem:
 						i.AST = nil
 					case *TextItem:
+						i.AST = nil
+					case *EmbedItem:
 						i.AST = nil
 					default:
 						t.Fatalf("unexpected item type %T", i)

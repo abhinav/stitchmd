@@ -7,5 +7,7 @@
 - [Usage](usage.md)
   - [Options](options.md)
   - [Syntax](syntax.md)
+- Advanced
   - [Page Titles](titles.md)
+  - [Including summaries](include.md)
 - [License](license.md)

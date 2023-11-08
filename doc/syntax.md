@@ -45,6 +45,19 @@ to indicate a hierarchy.
     ```
     </details>
 
+- **Inclusions** of other summary files:
+  These are links in the form `![title](file.md)`.
+  The included file will be read as another summary file,
+  and its sections will nested under this heading.
+
+    <details>
+    <summary>Example</summary>
+
+    ```markdown
+    - ![FAQ](faq.md)
+    ```
+    </details>
+
 - **Plain text**:
   These will become standalone headers in the output.
   These **must** have a nested list.

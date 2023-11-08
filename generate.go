@@ -17,6 +17,8 @@ type generator struct {
 	Renderer *mdfmt.Renderer // required
 	Log      *log.Logger
 	NoTOC    bool
+
+	NoSectionTitle bool
 }
 
 func (g *generator) Generate(src []byte, coll *markdownCollection) error {
@@ -37,7 +39,7 @@ func (g *generator) Generate(src []byte, coll *markdownCollection) error {
 
 func (g *generator) renderSection(src []byte, sec *markdownSection) error {
 	var nodes []ast.Node
-	if t := sec.Title; t != nil {
+	if t := sec.Title; !g.NoSectionTitle && t != nil {
 		nodes = append(nodes, t)
 	}
 	if !g.NoTOC {
@@ -71,6 +73,9 @@ func (g *generator) renderItem(item markdownItem) error {
 	case *markdownFileItem:
 		return g.renderFileItem(item)
 
+	case *markdownEmbedItem:
+		return g.renderEmbedItem(item)
+
 	case *markdownExternalLinkItem:
 		// Nothing to do.
 		// The item was already rendered in the TOC.
@@ -88,6 +93,27 @@ func (g *generator) renderGroupItem(group *markdownGroupItem) error {
 	}
 	_, _ = io.WriteString(g.W, "\n")
 	return nil
+}
+
+func (g *generator) renderEmbedItem(embed *markdownEmbedItem) error {
+	g.addHeadingSep()
+	if err := g.Renderer.Render(g.W, embed.SummaryFile.Source, embed.Heading.AST); err != nil {
+		return err
+	}
+
+	_, _ = io.WriteString(g.W, "\n")
+
+	return (&generator{
+		W:              g.W,
+		Renderer:       g.Renderer,
+		Log:            g.Log,
+		NoTOC:          true,
+		NoSectionTitle: true,
+		headingIdx:     g.headingIdx,
+	}).Generate(embed.SummaryFile.Source, &markdownCollection{
+		Sections:    []*markdownSection{embed.Section},
+		FilesByPath: embed.FilesByPath,
+	})
 }
 
 func (g *generator) renderFileItem(file *markdownFileItem) error {

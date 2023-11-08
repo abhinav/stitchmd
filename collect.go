@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
@@ -21,6 +24,15 @@ type collector struct {
 	Parser parser.Parser // required
 	FS     fs.FS         // required
 
+	// Paths relative to root of fs.FS,
+	// representing the stack of summary file embeds.
+	// Used to detect cycles.
+	Stack []string
+
+	// Directory under FS to resolve relative paths from.
+	// Must use '/' as the path separator.
+	Dir string
+
 	idGen *header.IDGen
 	files map[string]*markdownFileItem
 }
@@ -35,7 +47,9 @@ type markdownCollection struct {
 
 func (c *collector) Collect(info goldast.Positioner, toc *stitch.Summary) (*markdownCollection, error) {
 	c.files = make(map[string]*markdownFileItem)
-	c.idGen = header.NewIDGen()
+	if c.idGen == nil {
+		c.idGen = header.NewIDGen()
+	}
 
 	errs := goldast.NewErrorList(info)
 	sections := make([]*markdownSection, len(toc.Sections))
@@ -82,6 +96,7 @@ func (c *collector) collectSection(errs *goldast.ErrorList, sec *stitch.Section)
 //   - markdownFileItem: an included Markdown file
 //   - markdownGroupItem: a title without any files, grouping other items
 //   - markdownExternalLinkItem: an external link
+//   - markdownEmbedItem: a request to embed another summary file
 type markdownItem interface {
 	markdownItem()
 }
@@ -91,6 +106,9 @@ func (c *collector) collectItem(cursor tree.Cursor[stitch.Item]) (markdownItem, 
 	switch item := item.(type) {
 	case *stitch.LinkItem:
 		return c.collectLinkItem(item, cursor)
+
+	case *stitch.EmbedItem:
+		return c.collectEmbedItem(item, cursor)
 
 	case *stitch.TextItem:
 		return c.collectGroupItem(item), nil
@@ -158,16 +176,8 @@ type markdownFileItem struct {
 func (*markdownFileItem) markdownItem() {}
 
 func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, error) {
-	src, err := fs.ReadFile(c.FS, item.Target)
+	src, err := c.readFile(item.Target)
 	if err != nil {
-		// If the error is because the path name was not valid,
-		// it likely contains "." or ".." components,
-		// or has a "/" at the start or end of the path.
-		// Provide a hint to the user.
-		if errors.Is(err, fs.ErrInvalid) {
-			return nil, fmt.Errorf("invalid path name %q; did you mean to use -unsafe?", item.Target)
-		}
-
 		return nil, err
 	}
 
@@ -184,7 +194,8 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		htmlBlocks []*ast.HTMLBlock
 	)
 	headingsByOldID := make(map[string]*markdownHeading)
-	err = goldast.Walk(f.AST, func(n ast.Node) error {
+	// Error ignored because walker doesn't return errors.
+	_ = goldast.Walk(f.AST, func(n ast.Node) error {
 		switch n := n.(type) {
 		case *ast.Link:
 			links = append(links, n)
@@ -204,9 +215,6 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		}
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	mf := &markdownFileItem{
 		Path:            item.Target,
@@ -278,6 +286,97 @@ func (c *collector) collectGroupItem(item *stitch.TextItem) *markdownGroupItem {
 	}
 }
 
+type markdownEmbedItem struct {
+	Item        *stitch.EmbedItem
+	Section     *markdownSection
+	FilesByPath map[string]*markdownFileItem
+	Heading     *markdownHeading
+	SummaryFile *goldast.File
+
+	src []byte
+}
+
+var _ markdownItem = (*markdownEmbedItem)(nil)
+
+func (c *collector) collectEmbedItem(item *stitch.EmbedItem, cursor tree.Cursor[stitch.Item]) (*markdownEmbedItem, error) {
+	if cursor.ChildCount() > 0 {
+		return nil, errors.New("embed cannot have children")
+	}
+
+	embedPath := path.Join(c.Dir, item.Target)
+	for _, p := range c.Stack {
+		if p == embedPath {
+			return nil, fmt.Errorf("embed cycle: %v", strings.Join(append(c.Stack, embedPath), " -> "))
+		}
+	}
+	summaryStack := append(c.Stack, embedPath)
+
+	src, err := c.readFile(item.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	summaryFile := goldast.Parse(c.Parser, embedPath, src)
+	summary, err := stitch.ParseSummary(summaryFile)
+	if err != nil {
+		return nil, err
+	}
+
+	coll, err := (&collector{
+		Dir:    path.Join(c.Dir, path.Dir(item.Target)),
+		Parser: c.Parser,
+		FS:     c.FS,
+		idGen:  c.idGen,
+		Stack:  summaryStack,
+	}).Collect(summaryFile.Info, summary)
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(coll.Sections) {
+	case 0:
+		// Unreachable: ParseSummary always returns at least one section.
+		return nil, errors.New("no sections found")
+	case 1:
+		// ok
+	default:
+		pos := summaryFile.Position(goldast.OffsetOf(coll.Sections[1].Title))
+		return nil, fmt.Errorf("%v:unexpected section; expected only one section", pos)
+	}
+
+	section := coll.Sections[0]
+	var heading *markdownHeading
+
+	if h := section.Title; h != nil {
+		heading = c.newHeading(summaryFile, c.idGen, h)
+		// Ignore the heading level in the summary file.
+		// It'll get whatever the depth of the embed is.
+		heading.Lvl = 0
+	} else {
+		// The included file does not have a title.
+		// Generate one from the TOC link.
+		h := ast.NewHeading(1) // will be transformed
+		h.AppendChild(h, ast.NewString([]byte(item.Text)))
+		h.SetBlankPreviousLines(true)
+		id, _ := c.idGen.GenerateID(item.Text)
+		heading = &markdownHeading{
+			AST: h,
+			ID:  id,
+			Lvl: h.Level,
+		}
+	}
+
+	return &markdownEmbedItem{
+		Item:        item,
+		Section:     section,
+		FilesByPath: coll.FilesByPath,
+		SummaryFile: summaryFile,
+		Heading:     heading,
+	}, nil
+}
+
+func (*markdownEmbedItem) markdownItem() {}
+
 type markdownHeading struct {
 	AST ast.Node
 	ID  string
@@ -301,4 +400,21 @@ func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Headi
 
 func (h *markdownHeading) Level() int {
 	return h.Lvl
+}
+
+// readFile reads a file from the underlying filesystem.
+func (c *collector) readFile(p string) ([]byte, error) {
+	p = path.Join(c.Dir, filepath.ToSlash(p))
+	src, err := fs.ReadFile(c.FS, p)
+	if err != nil {
+		// If the error is because the path name was not valid,
+		// it likely contains "." or ".." components,
+		// or has a "/" at the start or end of the path.
+		// Provide a hint to the user.
+		if errors.Is(err, fs.ErrInvalid) {
+			return nil, fmt.Errorf("invalid path %q; did you mean to use -unsafe?", p)
+		}
+		return nil, err
+	}
+	return src, nil
 }
