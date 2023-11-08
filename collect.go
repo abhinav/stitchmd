@@ -348,10 +348,19 @@ func (c *collector) collectEmbedItem(item *stitch.EmbedItem, cursor tree.Cursor[
 	var heading *markdownHeading
 
 	if h := section.Title; h != nil {
-		heading = c.newHeading(summaryFile, c.idGen, h)
 		// Ignore the heading level in the summary file.
 		// It'll get whatever the depth of the embed is.
-		heading.Lvl = 0
+		h.Level = 1
+		id, _ := c.idGen.GenerateID(string(h.Text(summaryFile.Source)))
+		heading = &markdownHeading{
+			AST: h,
+			ID:  id,
+			Lvl: h.Level,
+		}
+
+		// Unset the section title so it doesn't transform
+		// heading levels.
+		section.Title = nil
 	} else {
 		// The included file does not have a title.
 		// Generate one from the TOC link.
