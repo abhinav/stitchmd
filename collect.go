@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -29,6 +30,7 @@ type collector struct {
 	Stack []string
 
 	// Directory under FS to resolve relative paths from.
+	// Must use '/' as the path separator.
 	Dir string
 
 	idGen *header.IDGen
@@ -301,7 +303,7 @@ func (c *collector) collectEmbedItem(item *stitch.EmbedItem, cursor tree.Cursor[
 		return nil, errors.New("embed cannot have children")
 	}
 
-	embedPath := filepath.Join(c.Dir, item.Target)
+	embedPath := path.Join(c.Dir, item.Target)
 	for _, p := range c.Stack {
 		if p == embedPath {
 			return nil, fmt.Errorf("embed cycle: %v", strings.Join(append(c.Stack, embedPath), " -> "))
@@ -321,7 +323,7 @@ func (c *collector) collectEmbedItem(item *stitch.EmbedItem, cursor tree.Cursor[
 	}
 
 	coll, err := (&collector{
-		Dir:    filepath.Join(c.Dir, filepath.Dir(item.Target)),
+		Dir:    path.Join(c.Dir, path.Dir(item.Target)),
 		Parser: c.Parser,
 		FS:     c.FS,
 		idGen:  c.idGen,
@@ -401,15 +403,16 @@ func (h *markdownHeading) Level() int {
 }
 
 // readFile reads a file from the underlying filesystem.
-func (c *collector) readFile(path string) ([]byte, error) {
-	src, err := fs.ReadFile(c.FS, filepath.Join(c.Dir, path))
+func (c *collector) readFile(p string) ([]byte, error) {
+	p = path.Join(c.Dir, filepath.ToSlash(p))
+	src, err := fs.ReadFile(c.FS, p)
 	if err != nil {
 		// If the error is because the path name was not valid,
 		// it likely contains "." or ".." components,
 		// or has a "/" at the start or end of the path.
 		// Provide a hint to the user.
 		if errors.Is(err, fs.ErrInvalid) {
-			return nil, fmt.Errorf("invalid path %q; did you mean to use -unsafe?", path)
+			return nil, fmt.Errorf("invalid path %q; did you mean to use -unsafe?", p)
 		}
 		return nil, err
 	}

@@ -3,7 +3,7 @@
     - ![Bar](foo/bar.md)
   want:
     - "1:3:open"
-    - "no such file or directory"
+    - /no such file or directory|cannot find the path
 
 - name: external link no children
   give: |

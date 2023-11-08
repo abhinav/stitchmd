@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
@@ -141,6 +142,17 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 	inputDir := determineDir(opts.Input)
 	outputDir := determineDir(opts.Output)
 
+	// /-separated relative path to the input file from the input directory.
+	// Empty if the input file is stdin.
+	var filenameRel string
+	if len(opts.Input) > 0 {
+		filenameRel, err = filepath.Rel(inputDir, filename)
+		if err != nil {
+			return err
+		}
+		filenameRel = filepath.ToSlash(filenameRel)
+	}
+
 	output := cmd.Stdout
 	if len(opts.Output) > 0 {
 		if opts.Diff {
@@ -201,7 +213,7 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 		),
 	)
 
-	f := goldast.Parse(mdParser, filename, src)
+	f := goldast.Parse(mdParser, filenameRel, src)
 	summary, err := stitch.ParseSummary(f)
 	if err != nil {
 		log.Println(err)
@@ -213,10 +225,15 @@ func (cmd *mainCmd) run(opts *params) (err error) {
 		collectFS = unsafeDirFS(inputDir)
 	}
 
+	var collectorStack []string
+	if len(filenameRel) > 0 {
+		collectorStack = append(collectorStack, filenameRel)
+	}
+
 	coll, err := (&collector{
 		FS:     collectFS,
 		Parser: mdParser,
-		Stack:  []string{filename},
+		Stack:  collectorStack,
 	}).Collect(f.Info, summary)
 	if err != nil {
 		log.Println(err)
@@ -252,6 +269,7 @@ type unsafeDirFS string
 var _ fs.FS = unsafeDirFS("")
 
 func (dir unsafeDirFS) Open(name string) (fs.File, error) {
+	name = filepath.FromSlash(name)
 	return os.Open(filepath.Join(string(dir), name))
 }
 
@@ -297,8 +315,8 @@ func (dw *diffWriter) Diff(w io.Writer) error {
 	}
 
 	return diff.Text(
-		filepath.Join("a", dw.fname),
-		filepath.Join("b", dw.fname),
+		path.Join("a", dw.fname),
+		path.Join("b", dw.fname),
 		dw.old,
 		dw.new.Bytes(),
 		w,
