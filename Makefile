@@ -12,7 +12,7 @@ export PATH := $(GOBIN):$(PATH)
 
 STITCHMD = bin/stitchmd
 STITCHMD_ARGS = -o README.md -preface doc/preface.txt doc/README.md
-TEST_FLAGS ?= -v -race
+TEST_FLAGS ?= -race
 
 # Non-test Go files.
 GO_SRC_FILES = $(shell find . \

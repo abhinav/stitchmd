@@ -52,7 +52,7 @@ jobs:
     - name: Test
       run: make cover
       env:
-        TEST_FLAGS: '-v -race'
+        TEST_FLAGS: '-race'
       shell: bash
 
     - name: Upload coverage
