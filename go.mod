@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/yuin/goldmark v1.7.0
 	go.abhg.dev/container/ring v0.3.0
-	go.abhg.dev/goldmark/frontmatter v0.1.0
+	go.abhg.dev/goldmark/frontmatter v0.2.0
 	golang.org/x/net v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
 )
