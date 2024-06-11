@@ -18,6 +18,11 @@ linters:
     - revive
 
 linters-settings:
+  errcheck:
+    exclude-functions:
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
   govet:
     enable:
       - niliness
