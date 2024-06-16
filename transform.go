@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/container/ring"
+	"go.abhg.dev/goldmark/toc"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/goldtext"
 	"go.abhg.dev/stitchmd/internal/must"
@@ -194,6 +195,64 @@ func (t *transformer) transformFile(f *markdownFileItem) {
 	}
 	f.File.Source = src
 
+	// If the file requested absorbtion of headings, add them to the summary
+	// as TOC items.
+	if f.Absorb && len(f.Headings) > 0 {
+		var parentListItem *ast.ListItem
+		for item := f.Item.AST.Parent(); item != nil; item = item.Parent() {
+			if li, ok := item.(*ast.ListItem); ok {
+				parentListItem = li
+				break
+			}
+		}
+		if parentListItem == nil {
+			t.Log.Panicf("could not find parent list item for %q", f.Path)
+		}
+		parentList := parentListItem.Parent().(*ast.List)
+
+		marker := parentList.Marker
+		var (
+			renderItems func([]*toc.Item) ast.Node
+			renderItem  func(*toc.Item) ast.Node
+		)
+
+		renderItems = func(items []*toc.Item) ast.Node {
+			if len(items) == 0 {
+				return nil
+			}
+
+			list := ast.NewList(marker)
+			for _, item := range items {
+				if listItem := renderItem(item); listItem != nil {
+					list.AppendChild(list, listItem)
+				}
+			}
+			return list
+		}
+
+		renderItem = func(item *toc.Item) ast.Node {
+			title := ast.NewString(item.Title)
+			title.SetRaw(true)
+
+			link := ast.NewLink()
+			link.Destination = append([]byte("#"), item.ID...)
+			link.AppendChild(link, title)
+
+			listItem := ast.NewListItem(0)
+			listItem.AppendChild(listItem, link)
+
+			if items := renderItems(item.Items); items != nil {
+				listItem.AppendChild(listItem, items)
+			}
+
+			return listItem
+		}
+
+		if tocItems := renderItems(f.TOC.Items); tocItems != nil {
+			parentListItem.AppendChild(parentListItem, tocItems)
+		}
+
+	}
 	doc := f.File.AST
 	if doc.ChildCount() > 0 {
 		doc.InsertBefore(doc, doc.FirstChild(), f.Title.AST)
@@ -312,6 +371,9 @@ func (t *transformer) transformHTMLNode(fromPath string, f *markdownFileItem, n 
 }
 
 func (t *transformer) transformHeading(src []byte, item stitch.Item, h *markdownHeading) []byte {
+	// GitHub doesn't support Heading attribute syntax.
+	h.AST.RemoveAttributes()
+
 	h.Lvl += item.ItemDepth() + t.sectionOffset
 	if h.Lvl < 1 {
 		h.Lvl = 1
@@ -337,9 +399,7 @@ func (t *transformer) transformHeading(src []byte, item stitch.Item, h *markdown
 	para.AppendChild(para, link)
 
 	bold := ast.NewEmphasis(2)
-	for c := h.AST.FirstChild(); c != nil; c = c.NextSibling() {
-		bold.AppendChild(bold, c)
-	}
+	bold.AppendChild(bold, ast.NewString(h.AST.Text(src)))
 	para.AppendChild(para, bold)
 
 	if parent := h.AST.Parent(); parent != nil {

@@ -11,6 +11,8 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
+	"go.abhg.dev/goldmark/frontmatter"
+	"go.abhg.dev/goldmark/toc"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/header"
 	"go.abhg.dev/stitchmd/internal/rawhtml"
@@ -171,6 +173,11 @@ type markdownFileItem struct {
 	HTMLPairs  rawhtml.Pairs
 	RawHTMLs   []*ast.RawHTML
 	HTMLBlocks []*ast.HTMLBlock
+
+	// Absorb indicates that the headings in this file
+	// should be included in the parent TOC.
+	Absorb bool
+	TOC    *toc.TOC
 }
 
 func (*markdownFileItem) markdownItem() {}
@@ -184,6 +191,18 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 	ctx := parser.NewContext()
 	f := goldast.Parse(c.Parser, item.Target, src, parser.WithContext(ctx))
 	fidgen := header.NewIDGen()
+
+	var options struct {
+		// Headings included in the file
+		// should be absorbed into the parent TOC.
+		Absorb bool `yaml:"absorb"`
+	}
+
+	if data := frontmatter.Get(ctx); data != nil {
+		if err := data.Decode(&options); err != nil {
+			return nil, fmt.Errorf("bad frontmatter: %v", err)
+		}
+	}
 
 	var (
 		links      []*ast.Link
@@ -227,6 +246,7 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 		HTMLPairs:       rawhtml.GetPairs(ctx),
 		RawHTMLs:        rawHTMLs,
 		HTMLBlocks:      htmlBlocks,
+		Absorb:          options.Absorb,
 	}
 
 	// If the page has only one level 1 heading,
@@ -255,6 +275,15 @@ func (c *collector) collectFileItem(item *stitch.LinkItem) (*markdownFileItem, e
 			}
 		}
 		mf.Headings = append([]*markdownHeading{mf.Title}, mf.Headings...)
+	}
+
+	// If we're being absorbed, we'll need a TOC.
+	if mf.Absorb {
+		fileTOC, err := toc.Inspect(mf.File.AST, mf.File.Source, toc.Compact(true))
+		if err != nil {
+			return nil, err
+		}
+		mf.TOC = fileTOC
 	}
 
 	c.files[item.Target] = mf
@@ -399,6 +428,7 @@ func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Headi
 	text := string(h.Text(f.Source))
 	id, _ := c.idGen.GenerateID(text)
 	oldID, _ := fgen.GenerateID(text)
+	h.SetAttributeString("id", []byte(id)) // needed for toc.Inspect
 	return &markdownHeading{
 		AST:   h,
 		ID:    id,
