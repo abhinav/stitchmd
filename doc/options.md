@@ -1,3 +1,7 @@
+---
+absorb: true
+---
+
 # Options
 
 stitchmd supports the following options:

@@ -11,9 +11,17 @@
   - [GitHub Action](#github-action)
 - [Usage](#usage)
   - [Options](#options)
+    - [Read from stdin](#read-from-stdin)
+    - [Add a preface](#add-a-preface)
+    - [Offset heading levels](#offset-heading-levels)
+    - [Disable the TOC](#disable-the-toc)
+    - [Write to file](#write-to-file)
+    - [Change the directory](#change-the-directory)
+    - [Report a diff](#report-a-diff)
   - [Syntax](#syntax)
 - [Advanced](#advanced)
   - [Page Titles](#page-titles)
+  - [Absorbing headings](#absorbing-headings)
   - [Including summaries](#including-summary-files)
 - [License](#license)
 
@@ -902,6 +910,68 @@ The title for `intro.md` will be `"Introduction to Foo"`.
 # Introduction to Foo
 
 Welcome to Foo.
+```
+
+</details>
+
+### Absorbing headings
+
+When adding another Markdown file to your summary,
+you can pull the headings of the included file in the final output
+by adding a YAML front matter block to the top of the file.
+
+```yaml
+---
+absorb: true
+---
+```
+
+For example, given the following:
+
+```markdown
+<!-- summary.md -->
+
+- [Installation](install.md)
+- [Configuration](config.md)
+
+<!-- config.md -->
+---
+absorb: true
+---
+
+# Configuration
+
+## Adding a new user
+
+To add a new user, ...
+
+## Removing a user
+
+To remove a user, ...
+```
+
+<details>
+<summary>Output</summary>
+
+```markdown
+- [Installation](#install)
+- [Configuration](#configuration)
+  - [Adding a new user](#adding-a-new-user)
+  - [Removing a user](#removing-a-user)
+
+# Installation
+
+<!-- ... -->
+
+# Configuration
+
+## Adding a new user
+
+To add a new user, ...
+
+## Removing a user
+
+To remove a user, ...
 ```
 
 </details>

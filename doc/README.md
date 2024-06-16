@@ -9,5 +9,6 @@
   - [Syntax](syntax.md)
 - Advanced
   - [Page Titles](titles.md)
+  - [Absorbing headings](absorb.md)
   - [Including summaries](include.md)
 - [License](license.md)

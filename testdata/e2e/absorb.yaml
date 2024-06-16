@@ -1,0 +1,92 @@
+- name: simple
+  give: |
+    - [Foo](foo.md)
+    - [Bar](bar.md)
+  files:
+    foo.md: |
+      ---
+      absorb: true
+      ---
+
+      # Foo
+
+      ## Introduction
+
+      ## How to foo
+
+    bar.md: |
+      ---
+      absorb: true
+      ---
+
+      # Introduction
+
+      # Details about bar
+  want: |
+    - [Foo](#foo)
+      - [Introduction](#introduction)
+      - [How to foo](#how-to-foo)
+    - [Bar](#bar)
+      - [Introduction](#introduction-1)
+      - [Details about bar](#details-about-bar)
+
+    # Foo
+
+    ## Introduction
+
+    ## How to foo
+
+    # Bar
+
+    ## Introduction
+
+    ## Details about bar
+
+- name: many levels
+  give: |
+    - Parent
+      - Child
+        - [Foo](foo.md)
+  files:
+    foo.md: |
+      ---
+      absorb: true
+      ---
+
+      # Foo
+
+      ## Level 2
+
+      ### Level 3
+
+      #### Level 4
+
+      ##### Level 5
+
+      ###### Level 6
+
+  want: |
+    - [Parent](#parent)
+      - [Child](#child)
+        - [Foo](#foo)
+          - [Level 2](#level-2)
+            - [Level 3](#level-3)
+              - [Level 4](#level-4)
+                - [Level 5](#level-5)
+                  - [Level 6](#level-6)
+
+    # Parent
+
+    ## Child
+
+    ### Foo
+
+    #### Level 2
+
+    ##### Level 3
+
+    ###### Level 4
+
+    <a id="level-5"></a> **Level 5**
+
+    <a id="level-6"></a> **Level 6**
