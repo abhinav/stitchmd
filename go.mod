@@ -13,7 +13,7 @@ require (
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
 	go.abhg.dev/goldmark/toc v0.10.0
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.27.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -23,5 +23,5 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 )
