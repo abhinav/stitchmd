@@ -7,7 +7,7 @@ require (
 	github.com/creack/pty v1.1.23
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-isatty v0.0.20
-	github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e
+	github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c
 	github.com/stretchr/testify v1.9.0
 	github.com/yuin/goldmark v1.7.7
 	go.abhg.dev/container/ring v0.3.0
