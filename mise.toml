@@ -1,0 +1,64 @@
+[env]
+GOBIN = "{{ config_root }}/bin"
+_.path = ["{{ config_root }}/bin"]
+
+[vars]
+_readme_args = '-o README.md -preface doc/preface.txt doc/README.md'
+
+[tools]
+"ubi:golangci/golangci-lint" = "latest"
+"ubi:miniscruff/changie" = "latest"
+go = "1.23.5"
+
+[tasks.install]
+run = "go install go.abhg.dev/stitchmd"
+description = "Install the project into bin/"
+
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
+
+[tasks."test:cover"]
+description = "Run tests with coverage"
+run = ["go test -coverprofile=cover.out -coverpkg=./... ./..."]
+
+[tasks."test:cover:html"]
+description = "Run tests with coverage and generate HTML report"
+depends = ["test:cover"]
+run = "go tool cover -html=cover.out -o cover.html"
+
+[tasks.lint]
+description = "Run all linters"
+depends = ["lint:*"]
+
+[tasks.readme]
+description = "Update the README"
+sources = ["doc/**", "**/*.go"]
+run = "go run . {{vars._readme_args}}"
+
+[tasks."lint:tidy"]
+description = "Ensure go.mod is tidy"
+run = "go mod tidy -diff"
+
+[tasks."lint:golangci"]
+description = "Run golangci-lint"
+run = "golangci-lint run"
+
+[tasks."lint:readme"]
+description = "Ensure that the README is up-to-date"
+run = """
+DIFF=$(go run . -color -d {{vars._readme_args}})
+if [[ -n "$DIFF" ]]; then
+    echo "README.md is out of date"
+    echo "$DIFF"
+    exit 1
+fi
+"""
+
+[tasks."release:prepare"]
+description = "Prepare a release"
+run = [
+  "changie batch {{arg(name='version')}}",
+  "changie merge",
+]
+
