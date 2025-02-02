@@ -4,16 +4,16 @@ go 1.22.0
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
-	github.com/creack/pty v1.1.23
-	github.com/mattn/go-colorable v0.1.13
+	github.com/creack/pty v1.1.24
+	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/yuin/goldmark v1.7.8
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
-	go.abhg.dev/goldmark/toc v0.10.0
-	golang.org/x/net v0.33.0
+	go.abhg.dev/goldmark/toc v0.11.0
+	golang.org/x/net v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -23,5 +23,5 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )
