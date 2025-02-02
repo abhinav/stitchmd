@@ -16,31 +16,26 @@ permissions:
 jobs:
   generate-pr:
     runs-on: ubuntu-latest
+    name: Generate release PR
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Batch changes
-      uses: miniscruff/changie-action@v2
-      with:
-        args: batch ${{ inputs.version }}
+    - uses: jdx/mise-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Merge changes
-      uses: miniscruff/changie-action@v2
-      with:
-        args: merge
-
-    - name: Get the latest version
-      id: latest
-      uses: miniscruff/changie-action@v2
-      with:
-        args: latest
+    - id: run
+      run: |
+        changie batch ${{ inputs.version }}
+        changie merge
+        echo "latest=$(changie latest)" >> "$GITHUB_OUTPUT"
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v7
       with:
-        title: Release ${{ steps.latest.outputs.output }}
-        branch: release/${{ steps.latest.outputs.output }}
-        commit-message: Release ${{ steps.latest.outputs.output }}
+        title: Release ${{ steps.run.outputs.latest }}
+        branch: release/${{ steps.run.outputs.latest }}
+        commit-message: Release ${{ steps.run.outputs.latest }}
         token: ${{ secrets.GITHUB_TOKEN }}
