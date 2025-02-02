@@ -31,18 +31,18 @@ func TestWalk(t *testing.T) {
 	}
 	if n := nodes[1]; assert.IsType(t, new(ast.Heading), n) {
 		assert.Equal(t, "foo.md:2:3", posc.Position(OffsetOf(n)).String(), "heading")
-		assert.Equal(t, "Foo", string(n.Text(f.Source)))
+		assert.Equal(t, "Foo", string(Text(f.Source, n)))
 	}
 	if n := nodes[2]; assert.IsType(t, new(ast.Text), n) {
 		assert.Equal(t, "foo.md:2:3", posc.Position(OffsetOf(n)).String(), "heading text")
-		assert.Equal(t, "Foo", string(n.Text(f.Source)))
+		assert.Equal(t, "Foo", string(Text(f.Source, n)))
 	}
 	if n := nodes[3]; assert.IsType(t, new(ast.Paragraph), n) {
 		assert.Equal(t, "foo.md:3:1", posc.Position(OffsetOf(n)).String(), "paragraph")
 	}
 	if n := nodes[4]; assert.IsType(t, new(ast.Text), n) {
 		assert.Equal(t, "foo.md:3:1", posc.Position(OffsetOf(n)).String(), "paragraph text")
-		assert.Equal(t, "hello world.", string(n.Text(f.Source)))
+		assert.Equal(t, "hello world.", string(Text(f.Source, n)))
 	}
 }
 

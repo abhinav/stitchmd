@@ -152,7 +152,7 @@ type LinkItem struct {
 
 func (p *itemTreeParser) parseLinkItem(link *ast.Link) *LinkItem {
 	return &LinkItem{
-		Text:   string(link.Text(p.src)),
+		Text:   string(goldast.Text(p.src, link)),
 		Target: filepath.ToSlash(string(link.Destination)),
 		Depth:  p.depth,
 		AST:    link,
@@ -197,7 +197,7 @@ var _ Item = (*EmbedItem)(nil)
 
 func (p *itemTreeParser) parseEmbedItem(embed *ast.Image) *EmbedItem {
 	return &EmbedItem{
-		Text:   string(embed.Text(p.src)),
+		Text:   string(goldast.Text(p.src, embed)),
 		Target: filepath.ToSlash(string(embed.Destination)),
 		Depth:  p.depth,
 		AST:    embed,
@@ -239,7 +239,7 @@ func (p *itemTreeParser) parseTextItem(text *ast.Text, hasChildren bool) *TextIt
 	}
 
 	return &TextItem{
-		Text:  string(text.Text(p.src)),
+		Text:  string(goldast.Text(p.src, text)),
 		Depth: p.depth,
 		AST:   text,
 	}

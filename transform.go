@@ -399,7 +399,7 @@ func (t *transformer) transformHeading(src []byte, item stitch.Item, h *markdown
 	para.AppendChild(para, link)
 
 	bold := ast.NewEmphasis(2)
-	bold.AppendChild(bold, ast.NewString(h.AST.Text(src)))
+	bold.AppendChild(bold, ast.NewString(goldast.Text(src, h.AST)))
 	para.AppendChild(para, bold)
 
 	if parent := h.AST.Parent(); parent != nil {
