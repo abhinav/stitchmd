@@ -380,7 +380,7 @@ func (c *collector) collectEmbedItem(item *stitch.EmbedItem, cursor tree.Cursor[
 		// Ignore the heading level in the summary file.
 		// It'll get whatever the depth of the embed is.
 		h.Level = 1
-		id, _ := c.idGen.GenerateID(string(h.Text(summaryFile.Source)))
+		id, _ := c.idGen.GenerateID(string(goldast.Text(summaryFile.Source, h)))
 		heading = &markdownHeading{
 			AST: h,
 			ID:  id,
@@ -425,7 +425,7 @@ type markdownHeading struct {
 }
 
 func (c *collector) newHeading(f *goldast.File, fgen *header.IDGen, h *ast.Heading) *markdownHeading {
-	text := string(h.Text(f.Source))
+	text := string(goldast.Text(f.Source, h))
 	id, _ := c.idGen.GenerateID(text)
 	oldID, _ := fgen.GenerateID(text)
 	h.SetAttributeString("id", []byte(id)) // needed for toc.Inspect

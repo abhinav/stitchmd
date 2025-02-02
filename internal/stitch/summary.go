@@ -132,7 +132,7 @@ func (p *summaryParser) parseSectionTitle(n ast.Node) (*SectionTitle, ast.Node) 
 	}
 
 	return &SectionTitle{
-		Text:  string(h.Text(p.src)),
+		Text:  string(goldast.Text(p.src, h)),
 		Level: h.Level,
 		AST:   h,
 	}, n.NextSibling()
