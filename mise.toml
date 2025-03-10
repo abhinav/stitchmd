@@ -8,7 +8,7 @@ _readme_args = '-o README.md -preface doc/preface.txt doc/README.md'
 [tools]
 "aqua:golangci/golangci-lint" = "latest"
 "ubi:miniscruff/changie" = "latest"
-go = "1.24.0"
+go = "1.24.1"
 
 [tasks.install]
 run = "go install go.abhg.dev/stitchmd"
