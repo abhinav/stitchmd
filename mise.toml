@@ -8,7 +8,7 @@ _readme_args = '-o README.md -preface doc/preface.txt doc/README.md'
 [tools]
 "aqua:golangci/golangci-lint" = "latest"
 "ubi:miniscruff/changie" = "latest"
-go = "1.24.1"
+go = "latest"
 
 [tasks.install]
 run = "go install go.abhg.dev/stitchmd"
@@ -16,16 +16,14 @@ description = "Install the project into bin/"
 
 [tasks.test]
 description = "Run tests"
-run = "go test ./..."
+run = "go test -race ./..."
 
-[tasks."test:cover"]
+[tasks.cover]
 description = "Run tests with coverage"
-run = ["go test -coverprofile=cover.out -coverpkg=./... ./..."]
-
-[tasks."test:cover:html"]
-description = "Run tests with coverage and generate HTML report"
-depends = ["test:cover"]
-run = "go tool cover -html=cover.out -o cover.html"
+run = [
+    "go test -race -coverprofile=cover.out -coverpkg=./... ./...",
+    "go tool cover -html=cover.out -o cover.html"
+]
 
 [tasks.lint]
 description = "Run all linters"
