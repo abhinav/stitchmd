@@ -36,7 +36,7 @@ jobs:
       shell: bash
 
     - name: Test
-      run: mise run test:cover -race
+      run: mise run cover
       shell: bash
 
     - name: Upload coverage
