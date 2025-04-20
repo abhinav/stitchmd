@@ -15,7 +15,7 @@ require (
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
 	go.abhg.dev/goldmark/toc v0.11.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
