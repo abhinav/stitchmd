@@ -2,7 +2,7 @@ module go.abhg.dev/stitchmd
 
 go 1.23.0
 
-toolchain go1.24.6
+toolchain go1.25.0
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
@@ -10,7 +10,7 @@ require (
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.13
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
