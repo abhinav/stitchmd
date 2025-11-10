@@ -2,7 +2,7 @@ module go.abhg.dev/stitchmd
 
 go 1.24.0
 
-toolchain go1.25.3
+toolchain go1.25.4
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
