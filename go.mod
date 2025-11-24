@@ -13,14 +13,14 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.13
 	go.abhg.dev/container/ring v0.3.0
-	go.abhg.dev/goldmark/frontmatter v0.2.0
+	go.abhg.dev/goldmark/frontmatter v0.3.0
 	go.abhg.dev/goldmark/toc v0.12.0
 	golang.org/x/net v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
