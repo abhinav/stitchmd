@@ -11,7 +11,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c
 	github.com/stretchr/testify v1.11.1
-	github.com/yuin/goldmark v1.7.13
+	github.com/yuin/goldmark v1.7.16
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.3.0
 	go.abhg.dev/goldmark/toc v0.12.0
