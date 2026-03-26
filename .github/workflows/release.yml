@@ -23,7 +23,7 @@ jobs:
       with:
         ref: ${{ inputs.version || github.ref }}
 
-    - uses: jdx/mise-action@v3
+    - uses: jdx/mise-action@v4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
