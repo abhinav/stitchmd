@@ -2,7 +2,7 @@ module go.abhg.dev/stitchmd
 
 go 1.25.0
 
-toolchain go1.26.2
+toolchain go1.26.3
 
 require (
 	github.com/Kunde21/markdownfmt/v3 v3.1.0
@@ -15,7 +15,7 @@ require (
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.3.0
 	go.abhg.dev/goldmark/toc v0.12.0
-	golang.org/x/net v0.53.0
+	golang.org/x/net v0.54.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -25,5 +25,5 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 )
