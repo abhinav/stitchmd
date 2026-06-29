@@ -12,7 +12,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       name: Check out repository
     - uses: jdx/mise-action@v4
       env:
@@ -26,7 +26,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: jdx/mise-action@v4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,4 +40,4 @@ jobs:
       shell: bash
 
     - name: Upload coverage
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
