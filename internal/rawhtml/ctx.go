@@ -1,6 +1,6 @@
 package rawhtml
 
-import "github.com/yuin/goldmark/parser"
+import "github.com/yuin/goldmark/v2/parser"
 
 // _dataKey is the ContextKey under which the [Pairs] are stored
 // in the [parser.Context].

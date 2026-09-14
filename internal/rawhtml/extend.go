@@ -1,9 +1,9 @@
 package rawhtml
 
 import (
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 // Extender installs the rawhtml extension into a Goldmark Markdown.
