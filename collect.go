@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
 	"go.abhg.dev/goldmark/frontmatter"
 	"go.abhg.dev/goldmark/toc"
 	"go.abhg.dev/stitchmd/internal/goldast"

@@ -11,7 +11,7 @@ require (
 	github.com/mattn/go-isatty v0.0.22
 	github.com/pkg/diff v0.0.0-20241224192749-4e6772a4315c
 	github.com/stretchr/testify v1.11.1
-	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/goldmark/v2 v2.1.0
 	go.abhg.dev/container/ring v0.3.0
 	go.abhg.dev/goldmark/frontmatter v0.3.0
 	go.abhg.dev/goldmark/toc v0.12.0
@@ -25,5 +25,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
+	github.com/yuin/goldmark v1.7.13 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 )
