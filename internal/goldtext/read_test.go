@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/text"
 )
 
 func TestReader_empty(t *testing.T) {

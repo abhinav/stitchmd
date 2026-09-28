@@ -1,6 +1,6 @@
 package goldast
 
-import "github.com/yuin/goldmark/ast"
+import "github.com/yuin/goldmark/v2/ast"
 
 // Visitor visits individual nodes in a Goldmark AST.
 type Visitor func(ast.Node) error

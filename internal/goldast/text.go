@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 )
 
 // Text returns the text for the [ast.String] and [ast.Text] nodes
