@@ -6,7 +6,7 @@ import (
 	"log"
 
 	mdfmt "github.com/Kunde21/markdownfmt/v3/markdown"
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 )
 
 type generator struct {
