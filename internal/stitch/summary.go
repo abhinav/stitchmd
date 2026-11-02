@@ -5,7 +5,7 @@
 package stitch
 
 import (
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 	"go.abhg.dev/stitchmd/internal/goldast"
 	"go.abhg.dev/stitchmd/internal/tree"
 )

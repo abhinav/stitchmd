@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 )
 
 // Position is the human-readable position information
