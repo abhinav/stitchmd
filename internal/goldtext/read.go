@@ -4,7 +4,7 @@ package goldtext
 import (
 	"io"
 
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/text"
 )
 
 // Reader is an io.Reader around a Goldmark text.Segments.
