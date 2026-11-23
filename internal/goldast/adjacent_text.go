@@ -1,6 +1,6 @@
 package goldast
 
-import "github.com/yuin/goldmark/ast"
+import "github.com/yuin/goldmark/v2/ast"
 
 // CombineAdjacentTexts combines adjacent [ast.Text] children
 // of the given node into a single [ast.Text] node.

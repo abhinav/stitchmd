@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 )
 
 func TestErrorList(t *testing.T) {
